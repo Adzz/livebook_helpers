@@ -2,7 +2,7 @@ defmodule LivebookHelpersTest do
   use ExUnit.Case
   doctest LivebookHelpers
 
-  test "greets the world" do
-    assert LivebookHelpers.hello() == :world
+  test "Can turn a simple docttest into a livebook" do
+    LivebookHelpers.livebook_from_module(Mod)
   end
 end
