@@ -14,6 +14,7 @@ defmodule Blog do
   data_schema(field: {:name, "name", &{:ok, to_string(&1)}})
 end
 ```
+
 This says we will create a struct with a `:name` key and will get the value for that key
 from under the `"name"` key in the source data. That value will be passed to `to_string/1`
 and the result of that function will end up as the value under `:name` in the resulting
@@ -28,6 +29,7 @@ field({:content, "text", &cast_string/1})
 #    path to data in the source    |
 #                           casting function
 ```
+
 Depending on your input data type the path pointing to a value in it may need to be
 interpreted differently. For our example of a map input type, the "path" is really just
 a key on that input map. But there is still flexibility in how we use that key to access
@@ -53,7 +55,6 @@ There are 5 kinds of struct fields we can have:
 ### Examples
 See the guides for more in depth examples but below you can see how we create a schema
 that will take a map of data and create a struct out of it. Given the following schema:
-
 ## to_struct/2
 
 Accepts an data schema module and some source data and attempts to create the struct
@@ -87,6 +88,7 @@ fields = [
 DataSchema.to_struct(input, Run, fields, DataSchema.MapAccessor)
 {:ok, %Run{time: "10:00"}}
 ```
+
 Creating a map:
 ## data_schema/1
 
@@ -115,6 +117,7 @@ defmodule Sandwich do
   DataSchema.data_schema(field: {:type, "the_type", &{:ok, String.upcase(&1)}, optional?: true})
 end
 ```
+
 ### Examples
 See the guides for more in depth examples but below you can see how we create a schema
 that will take a map of data and create a struct out of it. Given the following schema:

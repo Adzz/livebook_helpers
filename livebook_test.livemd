@@ -2,42 +2,22 @@
 
 # Mod
 
-## Section
-
-
-
-<!-- livebook:{"break_markdown":true} -->
-
 This is a livebook.
 
-```
+```elixir
 a = 1 + 1
 b = 2 * a
 15
-```
-
-```elixir
-a = [1, 2, 4]
-a ++ [5]
+iex > a = [1, 2, 4]
+... > a ++ [5]
+[1, 2, 3, 4, 5]
 ```
 
 ### With a bit of stuff in it....
-
-```elixir
-1
-```
-
 ## dummy_function/1
 
 This is a thing, with examples.
-
 ### Examples
-
-```elixir
-a = 1 + 1
-b = 2 * a
-```
-
 ## second_function/0
 
 ANOTHER ONE
