@@ -18,7 +18,6 @@ defmodule LivebookHelpers do
   * Each function's @doc is put under a section with the function's name and arity.
   * doctests become (formatted) elixir cells
   * The magic line to make github render livebooks as markdown is added.
-  *
   """
   def livebook_from_module(module, livebook_path) do
     File.write(Path.expand(livebook_path <> ".livemd"), livebook_string(module))
@@ -36,7 +35,17 @@ defmodule LivebookHelpers do
     """
 
     Enum.reduce(function_docs, start_of_page, fn
-      {{:function, function_name, arity}, _, [_], %{"en" => doc}, _meta}, acc ->
+      {{:macro, macro_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
+        acc <> "## #{macro_name}/#{arity}\n\n" <> elixir_cells(doc)
+
+      # When there is no function doc we just skip it for now.
+      {{:macro, macro_name, arity}, _, [_spec], :none, _meta}, acc ->
+        acc
+
+      {{:function, function_name, arity}, _line_number, [_spec], :none, _}, acc ->
+        acc
+
+      {{:function, function_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
         acc <> "## #{function_name}/#{arity}\n\n" <> elixir_cells(doc)
     end)
   end

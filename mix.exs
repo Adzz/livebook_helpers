@@ -30,6 +30,8 @@ defmodule LivebookHelpers.MixProject do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    []
+    [
+      {:data_schema, ">0.0.0"}
+    ]
   end
 end

@@ -1,2 +1,3 @@
 %{
+  "data_schema": {:hex, :data_schema, "0.2.4", "839e7d654f0a570e3ce6b39dfd5f69a50542c74c839566d53e2f09f58d4802ce", [:mix], [], "hexpm", "afbcc1de0af6ff90a8623fd599e5e9d17f00f5784299339ec6aea632c62985cc"},
 }
