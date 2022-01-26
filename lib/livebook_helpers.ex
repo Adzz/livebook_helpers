@@ -31,7 +31,7 @@ defmodule LivebookHelpers do
 
     # #{inspect(module)}
 
-    #{parse_module_doc(module_doc)}\
+    #{parse_module_doc(module_doc)}
     """
 
     Enum.reduce(function_docs, start_of_page, fn
@@ -39,10 +39,10 @@ defmodule LivebookHelpers do
         acc <> "## #{macro_name}/#{arity}\n\n" <> elixir_cells(doc)
 
       # When there is no function doc we just skip it for now.
-      {{:macro, macro_name, arity}, _, [_spec], :none, _meta}, acc ->
+      {{:macro, _macro_name, _arity}, _, [_spec], :none, _meta}, acc ->
         acc
 
-      {{:function, function_name, arity}, _line_number, [_spec], :none, _}, acc ->
+      {{:function, _function_name, _arity}, _line_number, [_spec], :none, _}, acc ->
         acc
 
       {{:function, function_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
@@ -63,6 +63,20 @@ defmodule LivebookHelpers do
   end
 
   def parse_elixir_cells([], {acc, _}), do: acc
+
+  def parse_elixir_cells(["    " <> code_sample | rest], {acc, ""}) do
+    parse_elixir_cells(rest, {acc, "    #{code_sample}\n"})
+  end
+
+  # If we are in an elixir cell then 4 spaces at the start of the line isn't valid.
+  # But if we are in a "4 space" elixir cell then yea it's valid. So either we can have
+  def parse_elixir_cells(["    " <> code_sample | rest], {acc, current_elixir_cell}) do
+    with "    " <> _ <- current_elixir_cell do
+      parse_elixir_cells(rest, {acc, current_elixir_cell <> "    #{code_sample}\n"})
+    else
+      _ -> raise "Parsing error - doctest is wrong, line needs to start with ...>"
+    end
+  end
 
   def parse_elixir_cells(["    ...>" <> _code_sample | _rest], {_acc, ""}) do
     raise "Parsing error - missing the begining iex> of the doc test"
@@ -89,15 +103,23 @@ defmodule LivebookHelpers do
   # This is the output and so can be ignored because Livebook will output it when you run
   # the cell. But it means we have collected all of the lines and so can format the cell
   # and save it.
-  def parse_elixir_cells([_line | rest], {acc, current_elixir_cell}) do
+
+  # When we end a doctest we want to skip the next line, when we end a 4 space snippet we
+  # do not want to skip the line.
+
+  # We should add another bit of state here.
+  def parse_elixir_cells([line | rest], {acc, current_elixir_cell}) do
     elixir_cell = """
 
     ```elixir
     #{Code.format_string!(current_elixir_cell)}
     ```
-
     """
 
-    parse_elixir_cells(rest, {acc <> elixir_cell, ""})
+    with "    " <> _ <- current_elixir_cell do
+      parse_elixir_cells(rest, {acc <> elixir_cell <> "#{line}\n", ""})
+    else
+      _ -> parse_elixir_cells(rest, {acc <> elixir_cell, ""})
+    end
   end
 end

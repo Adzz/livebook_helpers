@@ -7,23 +7,27 @@ data source. For example you can define a schema that knows how to turn an elixi
 into a struct, casting all of the values as it goes. Alternatively you can set up a
 schema to ingest XML data and create structs from the values inside the XML.
 Below is an example of a simple schema:
-    defmodule Blog do
-      import DataSchema, only: [data_schema: 1]
-      data_schema([
-        field: {:name, "name", &{:ok, to_string(&1)}}
-      ])
-    end
+
+```elixir
+defmodule Blog do
+  import DataSchema, only: [data_schema: 1]
+  data_schema(field: {:name, "name", &{:ok, to_string(&1)}})
+end
+```
 This says we will create a struct with a `:name` key and will get the value for that key
 from under the `"name"` key in the source data. That value will be passed to `to_string/1`
 and the result of that function will end up as the value under `:name` in the resulting
 struct.
 In general this is the format for a field:
-    field {:content, "text", &cast_string/1}
-    #  ^         ^      ^              ^
-    # field type |      |              |
-    # struct key name   |              |
-    #    path to data in the source    |
-    #                           casting function
+
+```elixir
+field({:content, "text", &cast_string/1})
+#  ^         ^      ^              ^
+# field type |      |              |
+# struct key name   |              |
+#    path to data in the source    |
+#                           casting function
+```
 Depending on your input data type the path pointing to a value in it may need to be
 interpreted differently. For our example of a map input type, the "path" is really just
 a key on that input map. But there is still flexibility in how we use that key to access
@@ -49,27 +53,7 @@ There are 5 kinds of struct fields we can have:
 ### Examples
 See the guides for more in depth examples but below you can see how we create a schema
 that will take a map of data and create a struct out of it. Given the following schema:
-    defmodule Sandwich do
-      require DataSchema
-      DataSchema.data_schema([
-        field: {:type, "the_type", &{:ok, String.upcase(&1)}},
-        list_of: {:fillings, "the_fillings", &({:ok, String.downcase(&1["name"])})}
-      ])
-    end
-    input_data = %{
-      "the_type" => "fake steak",
-      "the_fillings" => [
-        %{"name" => "fake stake", "good?" => true},
-        %{"name" => "SAUCE"},
-        %{"name" => "sweetcorn"},
-      ]
-    }
-    DataSchema.to_struct(input_data, Sandwich)
-    # outputs the following:
-    %Sandwich{
-      type: "FAKE STEAK",
-      fillings: ["fake stake", "sauce", "sweetcorn"],
-    }
+
 ## to_struct/2
 
 Accepts an data schema module and some source data and attempts to create the struct
@@ -81,18 +65,6 @@ This function takes a simple approach to creating the struct - whatever you retu
 a casting function will be set as the value of the struct field. You should raise if
 you want casting to fail.
 ### Examples
-    data = %{ "spice" => "enables space travel" }
-    defmodule Foo do
-      require DataSchema
-      DataSchema.data_schema(
-        field: {:a_rocket, "spice", &({:ok, &1})}
-      )
-    end
-    DataSchema.to_struct(data, Foo)
-    # => Outputs the following:
-    %Foo{a_rocket: "enables space travel"}
-
-
 ## to_struct/5
 
 Creates a struct or map from the provided arguments. This function can be used to define
@@ -100,22 +72,22 @@ runtime schemas for the most dynamic of cases. This means you don't have to defi
 at compile time using the `DataShema.data_schema/1` macro.
 ### Examples
 Creating a struct:
-    defmodule Run do
-      defstruct [:time]
-    end
-    input = %{"time" => "10:00"}
-    fields = [
-      field: {:time, "time", &{:ok, to_string(&1)}}
-    ]
-    DataSchema.to_struct(input, Run, fields, DataSchema.MapAccessor)
-    {:ok, %Run{time: "10:00"}}
+
+```elixir
+defmodule Run do
+  defstruct [:time]
+end
+
+input = %{"time" => "10:00"}
+
+fields = [
+  field: {:time, "time", &{:ok, to_string(&1)}}
+]
+
+DataSchema.to_struct(input, Run, fields, DataSchema.MapAccessor)
+{:ok, %Run{time: "10:00"}}
+```
 Creating a map:
-    input = %{"time" => "10:00"}
-    fields = [
-      field: {:time, "time", &{:ok, to_string(&1)}}
-    ]
-    DataSchema.to_struct(input, %{}, fields, DataSchema.MapAccessor)
-    {:ok, %{time: "10:00"}}
 ## data_schema/1
 
 A macro that creates a data schema. By default all struct fields are required but you
@@ -136,33 +108,13 @@ Available options are:
   them as optional by setting this to `true`. This will also be checked when creating a
   struct with `DataSchema.to_struct/2` returning an error if the required field is null.
 For example:
-    defmodule Sandwich do
-      require DataSchema
-      DataSchema.data_schema([
-        field: {:type, "the_type", &{:ok, String.upcase(&1)}, optional?: true},
-      ])
-    end
+
+```elixir
+defmodule Sandwich do
+  require DataSchema
+  DataSchema.data_schema(field: {:type, "the_type", &{:ok, String.upcase(&1)}, optional?: true})
+end
+```
 ### Examples
 See the guides for more in depth examples but below you can see how we create a schema
 that will take a map of data and create a struct out of it. Given the following schema:
-    defmodule Sandwich do
-      require DataSchema
-      DataSchema.data_schema([
-        field: {:type, "the_type", &{:ok, String.upcase.(&1)}},
-        list_of: {:fillings, "the_fillings", &({:ok, String.downcase(&1["name"])})}
-      ])
-    end
-    input_data = %{
-      "the_type" => "fake steak",
-      "the_fillings" => [
-        %{"name" => "fake stake", "good?" => true},
-        %{"name" => "SAUCE"},
-        %{"name" => "sweetcorn"},
-      ]
-    }
-    DataSchema.to_struct(input_data, Sandwich)
-    # outputs the following:
-    %Sandwich{
-      type: "FAKE STEAK",
-      fillings: ["fake stake", "sauce", "sweetcorn"],
-    }
