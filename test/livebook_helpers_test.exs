@@ -3,6 +3,6 @@ defmodule LivebookHelpersTest do
   doctest LivebookHelpers
 
   test "Can turn a simple docttest into a livebook" do
-    LivebookHelpers.livebook_from_module(Mod)
+    LivebookHelpers.livebook_from_module(Mod, "./livebook_test")
   end
 end

@@ -5,6 +5,15 @@ defmodule Mod do
       a = 1 + 1
       b = 2 * a
       15
+
+      iex> a = [1, 2,                      4]
+      ...> a ++ [5]
+      [1,2,3,4,5]
+
+  ### With a bit of stuff in it....
+
+      iex> 1
+      1
   """
 
   @doc """
