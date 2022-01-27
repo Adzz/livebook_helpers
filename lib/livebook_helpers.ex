@@ -45,7 +45,13 @@ defmodule LivebookHelpers do
       {{:macro, _macro_name, _arity}, _, [_spec], :none, _meta}, acc ->
         acc
 
+      {{:macro, _, _}, _, [_], :hidden, _}, acc ->
+        acc
+
       {{:macro, _macro_name, _arity}, _, [_spec], map, _meta}, acc when map_size(map) == 0 ->
+        acc
+
+      {{:function, _, _}, _, [_], :hidden, _}, acc ->
         acc
 
       {{:function, _function_name, _arity}, _line_number, [_spec], :none, _}, acc ->
@@ -54,7 +60,6 @@ defmodule LivebookHelpers do
       {{:function, function_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
         acc <> "## #{function_name}/#{arity}\n\n" <> elixir_cells(doc)
 
-      # this can be a map apparently?
       {{:function, _, _}, _, [_], map, _}, acc when map_size(map) == 0 ->
         acc
     end)
