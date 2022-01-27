@@ -24,7 +24,7 @@ by adding `livebook_helpers` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:livebook_helpers, "~> 0.0.1", only: :dev}
+    {:livebook_helpers, "~> 0.0.2", only: :dev}
   ]
 end
 ```
