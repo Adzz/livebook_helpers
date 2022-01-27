@@ -2,17 +2,17 @@
 
 # Mod
 
-## Section
-
-
-
-<!-- livebook:{"break_markdown":true} -->
-
 This is a livebook.
 
-```
+```elixir
 a = 1 + 1
 b = 2 * a
+15
+
+b = 2 * a
+```
+
+```elixir
 15
 ```
 

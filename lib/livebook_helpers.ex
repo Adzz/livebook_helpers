@@ -39,10 +39,10 @@ defmodule LivebookHelpers do
         acc <> "## #{macro_name}/#{arity}\n\n" <> elixir_cells(doc)
 
       # When there is no function doc we just skip it for now.
-      {{:macro, macro_name, arity}, _, [_spec], :none, _meta}, acc ->
+      {{:macro, _macro_name, _arity}, _, [_spec], :none, _meta}, acc ->
         acc
 
-      {{:function, function_name, arity}, _line_number, [_spec], :none, _}, acc ->
+      {{:function, _function_name, _arity}, _line_number, [_spec], :none, _}, acc ->
         acc
 
       {{:function, function_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
@@ -51,53 +51,113 @@ defmodule LivebookHelpers do
   end
 
   def parse_module_doc(module_doc) do
+    livebook = ""
+
     module_doc
-    |> String.split("\n", trim: true)
-    |> parse_elixir_cells({"", ""})
+    |> String.split("\n")
+    |> parse_elixir_cells(livebook)
   end
 
   def elixir_cells(doc) do
+    livebook = ""
+
     doc
-    |> String.split("\n", trim: true)
-    |> parse_elixir_cells({"", ""})
+    |> String.split("\n")
+    |> parse_elixir_cells(livebook)
   end
 
-  def parse_elixir_cells([], {acc, _}), do: acc
+  def parse_elixir_cells([], livebook), do: livebook
 
-  def parse_elixir_cells(["    ...>" <> _code_sample | _rest], {_acc, ""}) do
+  # A "" means it was a line of just a \n.
+  def parse_elixir_cells(["" | rest], livebook) do
+    parse_elixir_cells(rest, livebook <> "\n")
+  end
+
+  def parse_elixir_cells(["    iex>" <> code_sample | rest], livebook) do
+    {remaining_lines, elixir_cell} = parse_doctest(rest, code_sample <> "\n")
+    parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
+  end
+
+  def parse_elixir_cells(["    ...>" <> _code_sample | _rest], {_acc, "", ""}) do
     raise "Parsing error - missing the begining iex> of the doc test"
   end
 
-  # We need to collect the elixir cell so we can format it.
-  def parse_elixir_cells(["    ...>" <> code_sample | rest], {acc, current_elixir_cell}) do
-    parse_elixir_cells(rest, {acc, current_elixir_cell <> "#{code_sample}\n"})
+  # These need to come after the "   ...>" and "    iex>" for obvious reasons.
+  def parse_elixir_cells(["    " <> code_sample | rest], livebook) do
+    {remaining_lines, elixir_cell} = parse_four_space_code_blocks(rest, code_sample <> "\n")
+    parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
   end
 
-  def parse_elixir_cells(["    iex>" <> code_sample | rest], {acc, ""}) do
-    parse_elixir_cells(rest, {acc, "#{code_sample}\n"})
+  def parse_elixir_cells([line | rest], livebook) do
+    parse_elixir_cells(rest, livebook <> line <> "\n")
   end
 
-  def parse_elixir_cells(["    iex>" <> _code_sample | _rest], {_acc, _}) do
-    raise "Parsing error - You can't have a code block inside a code block"
+  def parse_four_space_code_blocks(["    iex>" <> line | rest], four_space_elixir_block) do
+    elixir_cell = """
+    ```elixir
+    #{Code.format_string!(four_space_elixir_block)}
+    ```
+
+    """
+
+    {["    iex>" <> line | rest], elixir_cell}
   end
 
-  def parse_elixir_cells([line | rest], {acc, ""}) do
-    parse_elixir_cells(rest, {acc <> "#{line}\n", ""})
+  def parse_four_space_code_blocks(["    ...>" <> line | rest], four_space_elixir_block) do
+    elixir_cell = """
+    ```elixir
+    #{Code.format_string!(four_space_elixir_block)}
+    ```
+
+    """
+
+    {["    ...>" <> line | rest], elixir_cell}
+  end
+
+  def parse_four_space_code_blocks(["    " <> code_sample | rest], elixir_cell) do
+    parse_four_space_code_blocks(rest, elixir_cell <> code_sample <> "\n")
+  end
+
+  def parse_four_space_code_blocks(["" | remaining_lines], four_space_elixir_block) do
+    parse_four_space_code_blocks(remaining_lines, four_space_elixir_block <> "\n")
+  end
+
+  # If the next line is anything else (ie not a 4 space indented line or new line) we are done.
+  def parse_four_space_code_blocks(remaining_lines, four_space_elixir_block) do
+    elixir_cell = """
+    ```elixir
+    #{Code.format_string!(four_space_elixir_block)}
+    ```
+    """
+
+    {remaining_lines, elixir_cell}
+  end
+
+  def parse_doctest(["    iex>" <> _code_sample | _rest], _acc) do
+    raise "Parsing error - You can't have a doctest inside a doctest"
+  end
+
+  def parse_doctest(["    ...>" <> code_sample | rest], elixir_cell) do
+    parse_doctest(rest, elixir_cell <> code_sample <> "\n")
+  end
+
+  # There is possibly a case to handle when brackets are involved, but for now we assume
+  # if you have a new line in a doctest then something is wrong.
+  def parse_doctest(["" | _], _elixir_cell) do
+    raise "Parsing error - doctest can't have blank lines in them"
   end
 
   # Here we are one line after the ...> which means we are on the last line of a doctest.
   # This is the output and so can be ignored because Livebook will output it when you run
   # the cell. But it means we have collected all of the lines and so can format the cell
   # and save it.
-  def parse_elixir_cells([_line | rest], {acc, current_elixir_cell}) do
+  def parse_doctest([_line | rest], elixir_cell) do
     elixir_cell = """
-
     ```elixir
-    #{Code.format_string!(current_elixir_cell)}
+    #{Code.format_string!(elixir_cell)}
     ```
-
     """
 
-    parse_elixir_cells(rest, {acc <> elixir_cell, ""})
+    {rest, elixir_cell}
   end
 end
