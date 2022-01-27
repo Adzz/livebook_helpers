@@ -27,17 +27,32 @@ defmodule LivebookHelpers do
   end
 
   def livebook_string(module) do
-    {:docs_v1, _, :elixir, _, %{"en" => module_doc}, _, function_docs} = Code.fetch_docs(module)
+    case Code.fetch_docs(module) do
+      {:docs_v1, _, _, _, :hidden, _, function_docs} ->
+        livebook = """
+        <!-- vim: syntax=markdown -->
 
-    start_of_page = """
-    <!-- vim: syntax=markdown -->
+        # #{inspect(module)}
 
-    # #{inspect(module)}
+        """
 
-    #{parse_module_doc(module_doc)}\
-    """
+        process_function_docs(function_docs, livebook)
 
-    Enum.reduce(function_docs, start_of_page, fn
+      {:docs_v1, _, _, _, %{"en" => module_doc}, _, function_docs} ->
+        livebook = """
+        <!-- vim: syntax=markdown -->
+
+        # #{inspect(module)}
+
+        #{parse_module_doc(module_doc)}\
+        """
+
+        process_function_docs(function_docs, livebook)
+    end
+  end
+
+  def process_function_docs(function_docs, livebook) do
+    Enum.reduce(function_docs, livebook, fn
       {{:macro, macro_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
         acc <> "## #{macro_name}/#{arity}\n\n" <> elixir_cells(doc)
 
