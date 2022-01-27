@@ -5,7 +5,8 @@ defmodule LivebookHelpers do
 
   @doc """
   Takes a module and a path to a file, creates a livebook from the moduledocs in the given
-  module. The `.livemd` extension is automatically added.
+  module. The `.livemd` extension is automatically added. Returns the file path for the
+  created livebook.
 
   This function will take a module and turn the module doc found there into a livebook.
   This make it really easy to create one set of information and have it be represented
@@ -20,7 +21,9 @@ defmodule LivebookHelpers do
   * The magic line to make github render livebooks as markdown is added.
   """
   def livebook_from_module(module, livebook_path) do
-    File.write(Path.expand(livebook_path <> ".livemd"), livebook_string(module))
+    created_file = Path.expand(livebook_path <> ".livemd")
+    File.write!(created_file, livebook_string(module))
+    created_file
   end
 
   def livebook_string(module) do
