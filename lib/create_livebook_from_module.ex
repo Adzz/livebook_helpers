@@ -18,6 +18,7 @@ defmodule Mix.Tasks.CreateLivebookFromModule do
   use Mix.Task
 
   @shortdoc "Creates a livebook from the docs in the given module."
+  @impl Mix.Task
   def run([module, file_path]) do
     path = LivebookHelpers.livebook_from_module(Module.safe_concat([module]), file_path)
     IO.puts("")
