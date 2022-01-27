@@ -41,8 +41,7 @@ defmodule LivebookHelpers.MixProject do
 
   defp deps do
     [
-      {:ex_doc, ">= 0.0.0", only: :docs, runtime: false},
-      {:data_schema, ">=0.0.0"}
+      {:ex_doc, ">= 0.0.0", only: :docs, runtime: false}
     ]
   end
 end
