@@ -6,6 +6,11 @@ defmodule Mod do
       b = 2 * a
       15
 
+      b = 2 * a
+
+      iex>15
+      15
+
       iex> a = [1, 2,                      4]
       ...> a ++ [5]
       [1,2,3,4,5]
@@ -25,8 +30,8 @@ defmodule Mod do
       ...> b = 2 * a
       15
   """
-  def dummy_function(x), do: :k
   def dummy_function(1), do: :k
+  def dummy_function(x), do: x
 
   @doc "ANOTHER ONE"
   def second_function(), do: 2
