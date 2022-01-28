@@ -4,7 +4,7 @@ Some useful helpers that you can use to interact with livebook.
 
 ## Generating Livebooks From Module Functions.
 
-The easiest way to use this is to include `LivebookHelpers` as a dev dependancy `{:livebook_helpers, "~> 0.0.1", only: :dev}`. Now you can run the mix task as follows:
+The easiest way to use this is to include `LivebookHelpers` as a dev dependancy `{:livebook_helpers, "~> 0.0.4", only: :dev}`. Now you can run the mix task as follows:
 
 ```sh
 mix CreateLivebookFromModule YourModule "path_to_destination_livebook"
@@ -24,7 +24,7 @@ by adding `livebook_helpers` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:livebook_helpers, "~> 0.0.3", only: :dev}
+    {:livebook_helpers, "~> 0.0.4", only: :dev}
   ]
 end
 ```
