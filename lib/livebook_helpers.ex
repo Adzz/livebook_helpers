@@ -132,6 +132,8 @@ defmodule LivebookHelpers do
     parse_elixir_cells(rest, livebook <> line <> "\n")
   end
 
+  # Existing cells =======================================================================
+
   defp parse_existing_elixir_cell(["" | rest], code_contents) do
     parse_existing_elixir_cell(rest, code_contents <> "\n")
   end
