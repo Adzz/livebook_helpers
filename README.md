@@ -4,7 +4,7 @@ Some useful helpers that you can use to interact with livebook.
 
 ## Generating Livebooks From Module Functions.
 
-The easiest way to use this is to include `LivebookHelpers` as a dev dependancy `{:livebook_helpers, "~> 0.0.1", only: :dev}`. Now you can run the mix task as follows:
+The easiest way to use this is to include `LivebookHelpers` as a dev dependency `{:livebook_helpers, "~> 0.0.1", only: :dev}`. Now you can run the mix task as follows:
 
 ```sh
 mix CreateLivebookFromModule YourModule "path_to_destination_livebook"
@@ -31,7 +31,7 @@ end
 
 ### Contributing
 
-**NB** Set the `MIX_ENV` to `:docs` when publishing the package. This will ensure that modules inside `test/support` wont get their documentation published with the library (as they are included in the :dev env).
+**NB** Set the `MIX_ENV` to `:docs` when publishing the package. This will ensure that modules inside `test/support` won't get their documentation published with the library (as they are included in the :dev env).
 
 ```sh
 MIX_ENV=docs mix hex.publish

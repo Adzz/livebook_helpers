@@ -109,7 +109,7 @@ defmodule LivebookHelpers do
   end
 
   def parse_elixir_cells(["    ...>" <> _code_sample | _rest], {_acc, "", ""}) do
-    raise "Parsing error - missing the begining iex> of the doc test"
+    raise "Parsing error - missing the beginning iex> of the doc test"
   end
 
   # These need to come after the "   ...>" and "    iex>" for obvious reasons.
