@@ -13,7 +13,11 @@ defmodule LivebookHelpers.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       description: description(),
       source_url: @source_url,
-      deps: deps()
+      deps: deps(),
+      docs: [
+        extras: ["README.md"],
+        main: "readme",
+      ]
     ]
   end
 
