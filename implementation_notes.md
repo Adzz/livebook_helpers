@@ -56,11 +56,14 @@ Do you create parsecs from the schemas, that would involve introspecting the fie
 
 But essentially the data_accessor would need to
 
+## Testing the elixir cells in a livebook
 
-## impl notes
+When writing a livebook usually you interact with the cells and so know they are valid or not.
 
-When we had an acc that looked like this: {acc, four_space_code_block, iex_code_block}
-it was interesting because it forced us to handle all the cases but did it buy us something?
-Like i feel like we could type that acc and then parallelize it because you know what each
-type needs to do.
-meh.
+In the future the flow for creating docs could / should be "take a section from the livebook and create a fn doc out of it". You could generate doctests out of the elixir cells and the markdown would be the doc.
+
+The benefit of going that way is what?
+
+e can test livebook cells basically, but what is the point really.
+
+

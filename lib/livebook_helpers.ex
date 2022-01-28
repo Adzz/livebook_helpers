@@ -26,8 +26,11 @@ defmodule LivebookHelpers do
     created_file
   end
 
+  @doc """
+  Returns the text that can be used to create a livebook using the docs in the supplied module.
+  """
   def livebook_string(module) do
-    case Code.fetch_docs(module) do
+    case Code.fetch_docs(Module.safe_concat([module])) do
       {:docs_v1, _, _, _, :hidden, _, function_docs} ->
         livebook = """
         <!-- vim: syntax=markdown -->
@@ -103,6 +106,13 @@ defmodule LivebookHelpers do
     parse_elixir_cells(rest, livebook <> "\n")
   end
 
+  # Sometime there will be a ``` section already, if there is and it's marked as elixir
+  # we should leave it as an elixir cell. There should be no chars after "elixir"
+  def parse_elixir_cells(["```elixir" <> _ | rest], livebook) do
+    {remaining_lines, elixir_cell} = parse_existing_elixir_cell(rest, "")
+    parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
+  end
+
   def parse_elixir_cells(["    iex>" <> code_sample | rest], livebook) do
     {remaining_lines, elixir_cell} = parse_doctest(rest, code_sample <> "\n")
     parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
@@ -122,6 +132,25 @@ defmodule LivebookHelpers do
     parse_elixir_cells(rest, livebook <> line <> "\n")
   end
 
+  defp parse_existing_elixir_cell(["" | rest], code_contents) do
+    parse_existing_elixir_cell(rest, code_contents <> "\n")
+  end
+
+  defp parse_existing_elixir_cell(["```" <> _ | rest], code_contents) do
+    elixir_cell = """
+    ```elixir
+    #{Code.format_string!(code_contents)}
+    ```
+
+    """
+
+    {rest, elixir_cell}
+  end
+
+  defp parse_existing_elixir_cell([code_line | rest], code_contents) do
+    parse_existing_elixir_cell(rest, code_contents <> code_line <> "\n")
+  end
+
   def parse_four_space_code_blocks(["    iex>" <> line | rest], four_space_elixir_block) do
     elixir_cell = """
     ```elixir
@@ -138,7 +167,6 @@ defmodule LivebookHelpers do
     ```elixir
     #{Code.format_string!(four_space_elixir_block)}
     ```
-
     """
 
     {["    ...>" <> line | rest], elixir_cell}
