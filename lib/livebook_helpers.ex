@@ -182,16 +182,45 @@ defmodule LivebookHelpers do
     parse_four_space_code_blocks(remaining_lines, four_space_elixir_block <> "\n")
   end
 
+  # With Ecto, there can be four space indentation when we are inside a bullet point.
+  # In this case we want to just not treat it as a code block.
+
   # If the next line is anything else (ie not a 4 space indented line or new line) we are done.
   def parse_four_space_code_blocks(remaining_lines, four_space_elixir_block) do
+    four_space_elixir_block |> IO.inspect(limit: :infinity, label: "DENT")
+
+    # There is the chance that the code block isn't actually valid, but I think most
+    # code examples should be valid to the formatter at least, even if like modules
+    # referenced don't exist.
+
+    # We can make the format best effort TBH.. up to us.
+    formatted =
+      try do
+        Code.format_string!(four_space_elixir_block)
+      rescue
+        _ -> four_space_elixir_block
+      end
+
     elixir_cell = """
     ```elixir
-    #{Code.format_string!(four_space_elixir_block)}
+    #{formatted}
     ```
     """
 
     {remaining_lines, elixir_cell}
   end
+
+  # In ecto we have docs like this, meaning we can have a 4 code indent and
+  # then have a doctest.... Do we allow it?
+
+  # to read a struct back from the repository:
+
+  #   # Get the struct back
+  #   iex> weather = Repo.get Weather, 1
+  #   %Weather{id: 1, ...}
+  #   # Delete it
+  #   iex> Repo.delete!(weather)
+  #   %Weather{...}
 
   def parse_doctest(["    iex>" <> _code_sample | _rest], _acc) do
     raise "Parsing error - You can't have a doctest inside a doctest"
