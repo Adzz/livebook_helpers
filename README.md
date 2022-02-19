@@ -30,14 +30,14 @@ by adding `livebook_helpers` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:livebook_helpers, "~> 0.0.3", only: :dev}
+    {:livebook_helpers, "~> 0.0.4", only: :dev}
   ]
 end
 ```
 
 ### Contributing
 
-**NB** Set the `MIX_ENV` to `:docs` when publishing the package. This will ensure that modules inside `test/support` wont get their documentation published with the library (as they are included in the :dev env).
+**NB** Set the `MIX_ENV` to `:docs` when publishing the package. This will ensure that modules inside `test/support` won't get their documentation published with the library (as they are included in the :dev env).
 
 ```sh
 MIX_ENV=docs mix hex.publish
