@@ -36,3 +36,16 @@ defmodule MyModule do
              |> List.first()
 end
 ```
+
+==================================================================================================
+
+Announcing https://github.com/Adzz/livebook_helpers
+
+This is a library that generates a livebook from a module. It turns the module and function docs into a livebook, turning any doctests and elixir snippets into elixir cells.
+
+This is really helpful for creating
+
+
+add it to docs alias. Link to blog when it's out.
+
+It adds the magic github command that ensures the livebook renders as markdown on github (giving nice syntax highlighting) and
