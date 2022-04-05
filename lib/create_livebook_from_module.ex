@@ -14,6 +14,10 @@ defmodule Mix.Tasks.CreateLivebookFromModule do
   * Each function's @doc is put under a section with the function's name and arity.
   * doctests become (formatted) elixir cells
   * The magic line to make github render livebooks as markdown is added.
+
+  ### Examples
+
+      mix create_livebook_from_module LivebookHelpers "my_livebook"
   """
   use Mix.Task
 

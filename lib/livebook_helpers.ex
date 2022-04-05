@@ -19,6 +19,12 @@ defmodule LivebookHelpers do
   * Each function's @doc is put under a section with the function's name and arity.
   * doctests become (formatted) elixir cells
   * The magic line to make github render livebooks as markdown is added.
+
+  ### Examples
+
+  ```sh
+  mix create_livebook_from_module LivebookHelpers "my_livebook"
+  ```
   """
   def livebook_from_module(module, livebook_path) do
     created_file = Path.expand(livebook_path <> ".livemd")
