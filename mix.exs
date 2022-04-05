@@ -1,7 +1,7 @@
 defmodule LivebookHelpers.MixProject do
   use Mix.Project
 
-  @version "0.0.4"
+  @version "0.0.5"
   @source_url "https://github.com/Adzz/livebook_helpers"
   def project do
     [
