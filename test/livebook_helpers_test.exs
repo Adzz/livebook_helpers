@@ -53,4 +53,10 @@ defmodule LivebookHelpersTest do
     test "typedocs" do
     end
   end
+
+  describe "parse_elixir_cells/2" do
+    test "" do
+
+    end
+  end
 end

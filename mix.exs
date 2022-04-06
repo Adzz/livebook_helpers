@@ -16,7 +16,7 @@ defmodule LivebookHelpers.MixProject do
       deps: deps(),
       docs: [
         extras: ["README.md"],
-        main: "readme",
+        main: "readme"
       ]
     ]
   end

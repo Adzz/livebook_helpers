@@ -26,6 +26,11 @@ defmodule LivebookHelpers do
   mix create_livebook_from_module LivebookHelpers "my_livebook"
   ```
   """
+  def livebook_from_module(module, livebook_path, deps) do
+    created_file = Path.expand(livebook_path <> ".livemd")
+    File.write!(created_file, livebook_string(module, deps))
+    created_file
+  end
   def livebook_from_module(module, livebook_path) do
     created_file = Path.expand(livebook_path <> ".livemd")
     File.write!(created_file, livebook_string(module))
@@ -35,6 +40,42 @@ defmodule LivebookHelpers do
   @doc """
   Returns the text that can be used to create a livebook using the docs in the supplied module.
   """
+  def livebook_string(module, deps) do
+    case Code.fetch_docs(Module.safe_concat([module])) do
+      {:docs_v1, _, _, _, :hidden, _, function_docs} ->
+        livebook = """
+        <!-- vim: syntax=markdown -->
+
+        # #{inspect(module)}
+
+        ## Dependencies
+
+        ```elixir
+        Mix.install(#{deps})
+        ```
+        """
+
+        process_function_docs(function_docs, livebook)
+
+      {:docs_v1, _, _, _, %{"en" => module_doc}, _, function_docs} ->
+        livebook = """
+        <!-- vim: syntax=markdown -->
+
+        # #{inspect(module)}
+
+        ## Dependencies
+
+        ```elixir
+        Mix.install(#{deps})
+        ```
+
+        #{parse_module_doc(module_doc)}\
+        """
+
+        process_function_docs(function_docs, livebook)
+    end
+  end
+
   def livebook_string(module) do
     case Code.fetch_docs(Module.safe_concat([module])) do
       {:docs_v1, _, _, _, :hidden, _, function_docs} ->
