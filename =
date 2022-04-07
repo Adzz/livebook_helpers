@@ -1,5 +1,0 @@
-Compiling 2 files (.ex)
-
-== Compilation error in file lib/livebook_helpers.ex ==
-** (SyntaxError) lib/livebook_helpers.ex:54:53: unexpected token: }. The "(" at line 54 is missing terminator ")"
-    (elixir 1.13.3) lib/kernel/parallel_compiler.ex:346: anonymous fn/5 in Kernel.ParallelCompiler.spawn_workers/7

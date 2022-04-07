@@ -37,3 +37,4 @@ mix create_livebook_from_module LivebookHelpers "my_livebook"
 ## livebook_string/2
 
 Returns the text that can be used to create a livebook using the docs in the supplied module.
+

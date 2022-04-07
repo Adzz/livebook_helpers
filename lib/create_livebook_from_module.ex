@@ -25,7 +25,7 @@ defmodule Mix.Tasks.CreateLivebookFromModule do
 
       mix create_livebook_from_module LivebookHelpers "my_livebook" "[:livebook_helpers]"
 
-      mix create_livebook_from_module LivebookHelpers "my_livebook" "[livebook_helpers: ">= 0.0.0"]"
+      mix create_livebook_from_module LivebookHelpers "my_livebook" "[livebook_helpers: \">= 0.0.0\"]"
 
   """
   use Mix.Task
