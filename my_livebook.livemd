@@ -5,7 +5,7 @@
 ## Dependencies
 
 ```elixir
-Mix.install([:livebook_helpers])
+Mix.install(livebook_helpers: ">= 0.0.0")
 ```
 
 Documentation for `LivebookHelpers`.

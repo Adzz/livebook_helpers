@@ -51,7 +51,7 @@ defmodule LivebookHelpers do
         ## Dependencies
 
         ```elixir
-        Mix.install(#{deps})
+        #{Code.format_string!("Mix.install(#{deps})")}
         ```
         """
 
@@ -66,7 +66,7 @@ defmodule LivebookHelpers do
         ## Dependencies
 
         ```elixir
-        Mix.install(#{deps})
+        #{Code.format_string!("Mix.install(#{deps})")}
         ```
 
         #{parse_module_doc(module_doc)}\
