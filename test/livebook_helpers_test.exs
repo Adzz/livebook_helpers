@@ -15,8 +15,8 @@ defmodule LivebookHelpersTest do
     end
 
     test "Multi line doctests" do
-      s = LivebookHelpers.livebook_string(Enum)
-      IO.puts(s)
+      # s = LivebookHelpers.livebook_string(Enum)
+      # IO.puts(s)
     end
 
     test "existing elixir cells stay as elixir cells" do
