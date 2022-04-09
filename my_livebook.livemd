@@ -5,10 +5,25 @@
 ## Dependencies
 
 ```elixir
-Mix.install(livebook_helpers: ">= 0.0.0")
+IEx.Helpers.recompile()
 ```
 
 Documentation for `LivebookHelpers`.
+
+```elixir
+{:ok, list} = :application.get_key(:livebook_helpers, :modules)
+IO.inspect(list)
+
+# module_string = "ImplementedProto"
+
+# Enum.filter(list, fn mod -> 
+#   mod |> Module.split |> Enum.take(1) == ["ImplementedProto"]
+# end)
+
+# Enum.map(list, fn x-> Module.definitions_in(x) end)
+
+Protocol.extract_protocols('~/Projects/livebook_helpers')
+```
 
 ## livebook_from_module/3
 
@@ -37,4 +52,3 @@ mix create_livebook_from_module LivebookHelpers "my_livebook"
 ## livebook_string/2
 
 Returns the text that can be used to create a livebook using the docs in the supplied module.
-

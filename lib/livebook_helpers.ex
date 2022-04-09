@@ -31,6 +31,7 @@ defmodule LivebookHelpers do
     File.write!(created_file, livebook_string(module, deps))
     created_file
   end
+
   def livebook_from_module(module, livebook_path) do
     created_file = Path.expand(livebook_path <> ".livemd")
     File.write!(created_file, livebook_string(module))
@@ -38,11 +39,15 @@ defmodule LivebookHelpers do
   end
 
   @doc """
-  Returns the text that can be used to create a livebook using the docs in the supplied module.
+  Returns the text that can be used to create a livebook using the docs in the supplied
+  module.
   """
   def livebook_string(module, deps) do
+    # Check out the docs for fetch_docs to understand the expected return value.
+    # https://hexdocs.pm/elixir/Code.html#fetch_docs/1
     case Code.fetch_docs(Module.safe_concat([module])) do
-      {:docs_v1, _, _, _, :hidden, _, function_docs} ->
+      # Tuple is {:docs_v1, _annotation, _beam_lang, _format, doc, _metadata, function_docs}
+      {:docs_v1, _, _, _, doc, _, function_docs} when doc in [:hidden, :none] ->
         livebook = """
         <!-- vim: syntax=markdown -->
 
@@ -77,8 +82,16 @@ defmodule LivebookHelpers do
   end
 
   def livebook_string(module) do
+    # We need to first check if a module implements any protocols. If it does they will
+    # effectively be extra modules that we need to fold into our livebook. If we don't
+    # do this the user might be surprised that their nested modules aren't actually
+    # documented in the livebook.
+
+    # We could see if the module is a protocol and then try to get all the implementations
+    # for it, but that doesn't feel like it would be great docs. Makes more sense to
+    # document the implementation of a protocol where it is used...
     case Code.fetch_docs(Module.safe_concat([module])) do
-      {:docs_v1, _, _, _, :hidden, _, function_docs} ->
+      {:docs_v1, _, _, _, doc, _, function_docs} when doc in [:hidden, :none] ->
         livebook = """
         <!-- vim: syntax=markdown -->
 
@@ -97,32 +110,48 @@ defmodule LivebookHelpers do
         #{parse_module_doc(module_doc)}\
         """
 
+        # function_docs |> IO.inspect(limit: :infinity, label: "dd")
         process_function_docs(function_docs, livebook)
     end
   end
 
+  # I'm not actually sure if there is a reliable order to the list of docs. Visually it
+  # looks like all type docs are grouped together but not sure if that is guaranteed.
+  # So we could perhaps put all the typedocs into one Section, but for now they each get
+  # their own section.
   def process_function_docs(function_docs, livebook) do
     Enum.reduce(function_docs, livebook, fn
-      {{:macro, macro_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
+      # We get this for protocols.
+      {{:type, _fn_name, _arity}, _, _, :none, _}, acc ->
+        acc
+
+      # We get this for protocols.
+      {{:callback, _fn_name, _arity}, _, _, doc, _}, acc when doc in [:hidden, :none] ->
+        acc
+
+      {{:callback, fn_name, arity}, _, _, %{"en" => doc}, _}, acc ->
+        acc <> "## #{fn_name}/#{arity}\n\n" <> elixir_cells(doc)
+
+      {{:type, type_name, _}, _line_number, _, %{"en" => type_doc}, _meta}, acc ->
+        acc <> "## #{type_name}\n\n" <> elixir_cells(type_doc)
+
+      {{:macro, macro_name, arity}, _, _spec, %{"en" => doc}, _meta}, acc ->
         acc <> "## #{macro_name}/#{arity}\n\n" <> elixir_cells(doc)
 
       # When there is no function doc we just skip it for now.
-      {{:macro, _macro_name, _arity}, _, [_spec], :none, _meta}, acc ->
+      {{:macro, _macro_name, _arity}, _, _spec, :none, _meta}, acc ->
         acc
 
-      {{:macro, _, _}, _, [_], :hidden, _}, acc ->
+      {{:macro, _, _}, _, [_], doc, _}, acc when doc in [:hidden, :none] ->
         acc
 
-      {{:macro, _macro_name, _arity}, _, [_spec], map, _meta}, acc when map_size(map) == 0 ->
+      {{:macro, _macro_name, _arity}, _, _spec, map, _meta}, acc when map_size(map) == 0 ->
         acc
 
-      {{:function, _, _}, _, [_], :hidden, _}, acc ->
+      {{:function, _, _}, _, [_], doc, _}, acc when doc in [:hidden, :none]->
         acc
 
-      {{:function, _function_name, _arity}, _line_number, [_spec], :none, _}, acc ->
-        acc
-
-      {{:function, function_name, arity}, _, [_spec], %{"en" => doc}, _meta}, acc ->
+      {{:function, function_name, arity}, _, _spec, %{"en" => doc}, _meta}, acc ->
         acc <> "## #{function_name}/#{arity}\n\n" <> elixir_cells(doc)
 
       {{:function, _, _}, _, [_], map, _}, acc when map_size(map) == 0 ->

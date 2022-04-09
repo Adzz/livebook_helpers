@@ -1,11 +1,3 @@
-defmodule NonElixirBackticks do
-  @moduledoc """
-  ```xml
-  <Thing />
-  ```
-  """
-end
-
 defmodule Thing do
   @moduledoc """
 

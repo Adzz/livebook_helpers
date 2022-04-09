@@ -18,45 +18,103 @@ defmodule LivebookHelpersTest do
     end
 
     test "doctests in doctests are not allowed" do
+      message = "Parsing error - You can't have a doctest inside a doctest"
+
+      assert_raise(RuntimeError, message, fn ->
+        LivebookHelpers.livebook_string(DoctestInDoctest)
+      end)
     end
 
-    test "four spaces in a doctest is the end of a doctest" do
+    test "blank line in doctest is not allowed" do
+      message = "Parsing error - doctest can't have blank lines in them"
+
+      assert_raise(RuntimeError, message, fn ->
+        LivebookHelpers.livebook_string(BlankLineDoctest)
+      end)
     end
 
     test "macros fns with no docs" do
+      assert LivebookHelpers.livebook_string(MacroWithNoDoc) ==
+               "<!-- vim: syntax=markdown -->\n\n# MacroWithNoDoc\n\nA wild doc appeared!\n\n"
     end
 
     test "macros fns work" do
+      assert LivebookHelpers.livebook_string(MacroWithDoc) ==
+               "<!-- vim: syntax=markdown -->\n\n# MacroWithDoc\n\n## with_a_doc/0\n\nReturns 1 probably.\n\n```elixir\n1 + 1\n```\n\n"
     end
 
     test "fns work" do
+      assert LivebookHelpers.livebook_string(FnsForAll) ==
+               "<!-- vim: syntax=markdown -->\n\n# FnsForAll\n\n## one/0\n\nThis is a doc\n\n## two/0\n\nThere are many like it, but this one is mine.\n\n```xml\n<text>\n```\n\n```elixir\n\"some elixir code example\"\n```\n"
     end
 
     test "fns with no docs work" do
+      assert LivebookHelpers.livebook_string(FnsForNone) ==
+               "<!-- vim: syntax=markdown -->\n\n# FnsForNone\n\n"
     end
 
     test "four space indentations are code blocks" do
+      assert LivebookHelpers.livebook_string(IndentedCodeAreElixirCells) ==
+               "<!-- vim: syntax=markdown -->\n\n# IndentedCodeAreElixirCells\n\n\n```elixir\n\"This is elixir\" <> \"And should be a cell\"\n```\n"
     end
 
-    test "moduledocs get written in" do
-    end
+    test "four space indentations are formatted" do
+      message =
+        "nofile:4:11: syntax error before: invalid\n    |\n  4 | \"this is\" invalid elixir\n    |           ^"
 
-    test "function docs but no module doc" do
+      assert_raise(SyntaxError, message, fn ->
+        LivebookHelpers.livebook_string(IndentedInvalidElixir)
+      end)
     end
 
     test "when @moduledoc false is used" do
-    end
-
-    test "when @doc false is used" do
+      assert LivebookHelpers.livebook_string(ModuleDocFalse) ==
+               "<!-- vim: syntax=markdown -->\n\n# ModuleDocFalse\n\n"
     end
 
     test "typedocs" do
+      assert LivebookHelpers.livebook_string(TypeDocs) ==
+               "<!-- vim: syntax=markdown -->\n\n# TypeDocs\n\n## fun_time/1\n\ndoc AND a spec?!\n\n## other_thing\n\nThis is a type\n## final\n\nThis is a type lower down the module, can it have elixir cells in it?\n\n```elixir\n1 + 1\n```\n\nThis probably wont test?\n\n```elixir\n\"example elixir though\"\n```\n"
+    end
+
+    test "protocols" do
+      assert LivebookHelpers.livebook_string(Proto) ==
+               "<!-- vim: syntax=markdown -->\n\n# Proto\n\nJust a normal mod doc I assume\n\n## thing/1\n\nAnything special here?\n\n"
+    end
+
+    test "protocol implementations" do
+      assert LivebookHelpers.livebook_string(ImplementedProto) ==
+               "<!-- vim: syntax=markdown -->\n\n# ImplementedProto\n\nJust a normal mod doc I assume\n\n## thing/1\n\nAnything special here?\n\n"
+
+      assert LivebookHelpers.livebook_string(Implementation) ==
+               "<!-- vim: syntax=markdown -->\n\n# Implementation\n\nThis is the actual moduledoc\n\n"
+
+      # RIGHT now if we get the actual module for the implementation then it works.
+      assert LivebookHelpers.livebook_string(ImplementedProto.Implementation) ==
+               "<!-- vim: syntax=markdown -->\n\n# ImplementedProto.Implementation\n\nDoc for implementation.\nnot sure you should do this but it probably works.\n\n## thing/1\n\nthis is a doc\n"
+
+      # BUT the problem is if the implementation is in the module you don't want to have to
+      # like manually find the module name for the implementation. It would be great to do
+      # it for them for protocols, but that requires:
+      # 1. find all protocols
+      # 2. Get the implementations for it
+      # 3. Generate the implementation that's relevant for the module we are in
+
+      # None of that is trivial, so for now I will create an issue and put something in the
+      # README.
+    end
+
+    test "behaviours docs" do
+      assert LivebookHelpers.livebook_string(Behave) == "<!-- vim: syntax=markdown -->\n\n# Behave\n\n## thing/1\n\nThis is a doc for a callback, dope right?\n"
+    end
+
+    test "nested modules" do
+      # Should we be able to extract all nested modules too?
     end
   end
 
   describe "parse_elixir_cells/2" do
     test "" do
-
     end
   end
 end

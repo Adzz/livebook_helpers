@@ -22,6 +22,31 @@ You can try it out with like this:
 mix CreateLivebookFromModule LivebookHelpers "livebook_helpers_livebook"
 ```
 
+### Protocol Implementations
+
+When you implement a protocol a new module is created:
+
+```elixir
+defmodule Thing do
+  defimpl Enum do
+    ...
+  end
+end
+```
+
+This would create a module called `Enum.Thing`. If I were documenting all the functions in `Thing`, it would be great if it included any protocols that were implemented there also, but because a new module is created it's not trivial to do. We would have to find all protocols, then see if our module implemented any of them, then construct the module name and generate the docs for that module. I plan on trying this at some point.
+
+That means currently you will have to generate a livebook for each protocol implementation. You can find the name of the created module by doing this:
+
+```elixir
+defmodule Thing do
+  defimpl Enum do
+    __MODULE__ |> IO.inspect(limit: :infinity, label: "protocol module name")
+    ...
+  end
+end
+```
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
