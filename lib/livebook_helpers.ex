@@ -5,6 +5,36 @@ defmodule LivebookHelpers do
 
   @doc """
   Takes a module and a path to a file, creates a livebook from the moduledocs in the given
+  module. The `.livemd` extension is automatically added. The provided deps are put into a
+  `Mix.install` section at the start of the livebook, so the deps should be in the format
+  that `Mix.install` allows.
+
+  This function will take a module and turn the module doc found there into a livebook.
+  This make it really easy to create one set of information and have it be represented
+  in different formats. For example you can write a README, use it as the moduledoc then
+  run this function to spit out a livebook with all the same info.
+
+  Below is a summary of what we do to create the Livebook:
+
+  * The module is used as the title for the Livebook.
+  * Each function's @doc is put under a section with the function's name and arity.
+  * doctests become (formatted) elixir cells
+  * The magic line to make github render livebooks as markdown is added.
+
+  ### Examples
+
+  ```sh
+  mix create_livebook_from_module LivebookHelpers "my_livebook" "[livebook_helpers: \">= 0.0.0\"]"
+  ```
+  """
+  def livebook_from_module(module, livebook_path, deps) do
+    created_file = Path.expand(livebook_path <> ".livemd")
+    File.write!(created_file, livebook_string(module, deps))
+    created_file
+  end
+
+  @doc """
+  Takes a module and a path to a file, creates a livebook from the moduledocs in the given
   module. The `.livemd` extension is automatically added. Returns the file path for the
   created livebook.
 
@@ -26,12 +56,6 @@ defmodule LivebookHelpers do
   mix create_livebook_from_module LivebookHelpers "my_livebook"
   ```
   """
-  def livebook_from_module(module, livebook_path, deps) do
-    created_file = Path.expand(livebook_path <> ".livemd")
-    File.write!(created_file, livebook_string(module, deps))
-    created_file
-  end
-
   def livebook_from_module(module, livebook_path) do
     created_file = Path.expand(livebook_path <> ".livemd")
     File.write!(created_file, livebook_string(module))

@@ -49,7 +49,7 @@ defmodule LivebookHelpers.MixProject do
   end
 
   defp create_livebook(_) do
-    Mix.Task.run("create_livebook_from_module", ["ChonkOMeter", "chonk_o_meter_livebook"])
+    Mix.Task.run("create_livebook_from_module", ["LivebookHelpers", "my_livebook"])
   end
 
 
