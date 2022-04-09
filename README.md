@@ -7,7 +7,7 @@ Some useful helpers that you can use to interact with livebook.
 The easiest way to use this is to include `LivebookHelpers` as a dev dependency:
 
 ```elixir
-{:livebook_helpers, "~> 0.0.1", only: :dev}
+{:livebook_helpers, "~> 0.0.6", only: :dev}
 ```
 
 Now you can run the mix task as follows:
@@ -55,7 +55,7 @@ by adding `livebook_helpers` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:livebook_helpers, "~> 0.0.5", only: :dev}
+    {:livebook_helpers, "~> 0.0.6", only: :dev}
   ]
 end
 ```
