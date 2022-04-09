@@ -1,4 +1,9 @@
 defmodule LivebookHelpers do
+  # We should try generating livebooks for the Elixir modules.
+  # This would mean we could also get a bit meta and use a livebook
+  # to append to itself the docs for the module. Or replace itself
+  # entirely!
+
   @moduledoc """
   Documentation for `LivebookHelpers`.
   """
@@ -172,7 +177,7 @@ defmodule LivebookHelpers do
       {{:macro, _macro_name, _arity}, _, _spec, map, _meta}, acc when map_size(map) == 0 ->
         acc
 
-      {{:function, _, _}, _, [_], doc, _}, acc when doc in [:hidden, :none]->
+      {{:function, _, _}, _, [_], doc, _}, acc when doc in [:hidden, :none] ->
         acc
 
       {{:function, function_name, arity}, _, _spec, %{"en" => doc}, _meta}, acc ->
@@ -207,8 +212,14 @@ defmodule LivebookHelpers do
   end
 
   # Sometime there will be a ``` section already, if there is and it's marked as elixir
-  # we should leave it as an elixir cell. There should be no chars after "elixir"
+  # we should leave it as an elixir cell. There should be no chars after "elixir" but
+  # there may be spaces I guess.
   def parse_elixir_cells(["```elixir" <> _ | rest], livebook) do
+    {remaining_lines, elixir_cell} = parse_existing_elixir_cell(rest, "")
+    parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
+  end
+
+  def parse_elixir_cells(["```elixir" | rest], livebook) do
     {remaining_lines, elixir_cell} = parse_existing_elixir_cell(rest, "")
     parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
   end
@@ -218,8 +229,14 @@ defmodule LivebookHelpers do
     parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
   end
 
-  def parse_elixir_cells(["    ...>" <> _code_sample | _rest], {_acc, "", ""}) do
+  def parse_elixir_cells(["    ...>" <> _code_sample | _rest], _acc) do
     raise "Parsing error - missing the beginning iex> of the doc test"
+  end
+
+  def parse_elixir_cells(["  *" <> bullet_point | rest], livebook) do
+    # The 2 is the current level of indentation. It's needed to know about
+    {remaining_lines, bullets} = parse_bullet_point(rest, 2, "  *" <> bullet_point)
+    parse_elixir_cells(remaining_lines, livebook <> bullets)
   end
 
   # These need to come after the "   ...>" and "    iex>" for obvious reasons.
@@ -284,6 +301,12 @@ defmodule LivebookHelpers do
 
   # If the next line is anything else (ie not a 4 space indented line or new line) we are done.
   def parse_four_space_code_blocks(remaining_lines, four_space_elixir_block) do
+    # |> IO.inspect(limit: :infinity, label: "")
+
+    # It might end up being easier to do a another pass once we have created the livebook
+    # where we format all the elixir cells. But even then... when are they elixir cells
+    # and when are they snippets in the markdown. We know only because we parsed from a
+    # doctest etc.
     elixir_cell = """
     ```elixir
     #{Code.format_string!(four_space_elixir_block)}
@@ -293,8 +316,10 @@ defmodule LivebookHelpers do
     {remaining_lines, elixir_cell}
   end
 
-  def parse_doctest(["    iex>" <> _code_sample | _rest], _acc) do
-    raise "Parsing error - You can't have a doctest inside a doctest"
+  # Turns out this is valid. In Enum for example there are doctests that prepend multiple
+  # lines for the same doctest with an `iex>`
+  def parse_doctest(["    iex>" <> code_sample | rest], elixir_cell) do
+    parse_doctest(rest, elixir_cell <> code_sample <> "\n")
   end
 
   def parse_doctest(["    ...>" <> code_sample | rest], elixir_cell) do
@@ -319,5 +344,54 @@ defmodule LivebookHelpers do
     """
 
     {rest, elixir_cell}
+  end
+
+  def parse_bullet_point(["" | rest], indentation, livebook) do
+    parse_bullet_point(rest, indentation, livebook <> "\n")
+  end
+
+  def parse_bullet_point([line | rest], indentation, livebook) when indentation <= 0 do
+    {rest, livebook <> "\n" <> line}
+  end
+
+  # We want to allow line wraps in bullet points, meaning you may have a 4 space indent
+  # which should not be a code block, eg:
+  # ```
+  #   * This is a bullet
+  #     point still.
+  #       * nested bullet point too.
+  # ```
+  # this means we have to enforce that a bullet point be "done" when there is at least
+  # one empty line after OR if there is a new bullet point AT THE SAME LEVEL OF INDENTATION.
+
+  # SO, if we hit a two space bullet point we are onto the next line. We put this first
+  # as it's most likely.
+
+  # If we are not the next bullet point we can possibly a line wrap OR a nested bullet
+  # point. But to know that we need to know the level of indentation we are working with
+  # and that makes simply binary pattern matching not possible.
+  def parse_bullet_point([line | rest], indentation, livebook) do
+    prefix = String.duplicate(" ", indentation)
+
+    if String.starts_with?(line, prefix <> "*") do
+      # if we are here line is the next bullet point.
+      parse_bullet_point(rest, indentation, livebook <> "\n" <> line)
+    else
+      nested_bullet_prefix = String.duplicate(" ", indentation + 2)
+
+      if String.starts_with?(line, nested_bullet_prefix <> "*") do
+        # Here we know we are a nested bullet point, so we recur increasing indentation.
+        parse_bullet_point(rest, indentation + 2, livebook <> "\n" <> line)
+      else
+        if String.starts_with?(line, nested_bullet_prefix) do
+          # If we are here it means we are line wrapping. I think.
+          parse_bullet_point(rest, indentation, livebook <> "\n" <> line)
+        else
+          # IF we are here then I think the bullet points are done for this level of
+          # indentation.
+          parse_bullet_point([line | rest], indentation - 2, livebook)
+        end
+      end
+    end
   end
 end

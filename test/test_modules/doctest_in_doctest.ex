@@ -4,6 +4,7 @@ defmodule DoctestInDoctest do
 
       iex> 1 * 1
       iex> 2
+      2
 
   This is:
 

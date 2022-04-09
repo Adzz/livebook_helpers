@@ -7,6 +7,18 @@ defmodule LivebookHelpersTest do
   end
 
   describe "livebook_string/1" do
+    test "bullet points" do
+      s = LivebookHelpers.livebook_string(Bullets)
+      # IO.puts(s)
+      assert s ==
+               "<!-- vim: syntax=markdown -->\n\n# Bullets\n\n## test_fun/0\n\nChunks the `enumerable` with fine grained control when every chunk is emitted.\n`chunk_fun` receives the current element and the accumulator and must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk and continue with the accumulator\n    line wraps are fine too.\n  * `{:cont, acc}` to not emit any chunk and continue with the accumulator\n    * nested bullet points are cool\n  * `{:halt, acc}` to halt chunking over the `enumerable`.\n    what about linew wraps AND\n    * nested bullet points??? a mad mad\n      wrapped nested bullet point. what a time.\n  * guess again\n\n`after_fun` is invoked with the final accumulator when iteration isfinished (or `halt`ed) to handle any trailing elements that were returned\nas part of an accumulator, but were not emitted as a chunk by `chunk_fun`.\nIt must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk. The chunk will be appended to the\n    list of already emitted chunks.\n  * `{:cont, acc}` to not emit a chunk\n\nThe `acc` in `after_fun` is required in order to mirror the tuple formatfrom `chunk_fun` but it will be discarded since the traversal is complete.\n\nReturns a list of emitted chunks.\n\n## Examples\n\n```elixir\nchunk_fun = fn element, acc ->\n  if rem(element, 2) == 0 do\n    {:cont, Enum.reverse([element | acc]), []}\n  else\n    {:cont, [element | acc]}\n  end\nend\n\nafter_fun = fn\n  [] -> {:cont, []}\n  acc -> {:cont, Enum.reverse(acc), []}\nend\n\nEnum.chunk_while(1..10, [], chunk_fun, after_fun)\n```\n```elixir\nEnum.chunk_while([1, 2, 3, 5, 7], [], chunk_fun, after_fun)\n```\n\n\n"
+    end
+
+    test "Multi line doctests" do
+      s = LivebookHelpers.livebook_string(Enum)
+      IO.puts(s)
+    end
+
     test "existing elixir cells stay as elixir cells" do
       assert LivebookHelpers.livebook_string(Thing) ==
                "<!-- vim: syntax=markdown -->\n\n# Thing\n\n\n```elixir\n# field {:content, \"text\", &cast_string/1}\n#       ^          ^                ^\n# struct field     |                |\n#     path to data in the source    |\n#                            casting function\n```\n\n\nThis says in the source data there will be a field called `:text`. When creating a struct we should get the data under that field and pass it too `cast_string/1`. The result of that function will be put in the resultant struct under the key `:content`.\n\nThere are 5 kinds of struct fields we could want:\n\n1. `field`     - The value will be a casted value from the source data.\n2. `list_of`   - The value will be a list of casted values created from the source data.\n3. `has_one`   - The value will be created from a nested data schema (so will be a struct)\n4. `has_many`  - The value will be created by casting a list of values into a data schema.\n(You end up with a list of structs defined by the provided schema). Similar to has_many in ecto\n5. `aggregate` - The value will be a casted value formed from multiple bits of data in the source.\n\nAvailable options are:\n\n* `:optional?` - specifies whether or not the field in the struct should be included in\nthe `@enforce_keys` for the struct. By default all fields are required but you can mark\nthem as optional by setting this to `true`. This will also be checked when creating a\nstruct with `DataSchema.to_struct/2` returning an error if the required field is null.\n\nFor example:\n\n```elixir\ndefmodule Sandwich do\n  require DataSchema\n\n  DataSchema.data_schema(field: {:type, \"the_type\", &{:ok, String.upcase(&1)}, optional?: true})\nend\n```\nTo see this better let's look at a very simple example. Assume our input data looks like this:\n\n```elixir\nsource_data = %{\n  \"content\" => \"This is a blog post\",\n  \"comments\" => [%{\"text\" => \"This is a comment\"}, %{\"text\" => \"This is another comment\"}],\n  \"draft\" => %{\"content\" => \"This is a draft blog post\"},\n  \"date\" => \"2021-11-11\",\n  \"time\" => \"14:00:00\",\n  \"metadata\" => %{\"rating\" => 0}\n}\n```\n\n\n"
@@ -17,11 +29,24 @@ defmodule LivebookHelpersTest do
                "<!-- vim: syntax=markdown -->\n\n# NonElixirBackticks\n\n```xml\n<Thing />\n```\n\n"
     end
 
-    test "doctests in doctests are not allowed" do
-      message = "Parsing error - You can't have a doctest inside a doctest"
+    test "doctests in doctests are allowed - they are the same test until there is a newline" do
+      assert LivebookHelpers.livebook_string(DoctestInDoctest) ==
+               "<!-- vim: syntax=markdown -->\n\n# DoctestInDoctest\n\nThis is not allowed:\n\n```elixir\n1 * 1\n2\n```\n\nThis is:\n\n```elixir\n1 * 1\n2\n```\n\nAnd this:\n\n```elixir\n1 * 1\n```\n\n```elixir\n2\n```\n\n"
+    end
+
+    test "starting doc test wrong" do
+      message = "Parsing error - missing the beginning iex> of the doc test"
 
       assert_raise(RuntimeError, message, fn ->
-        LivebookHelpers.livebook_string(DoctestInDoctest)
+        LivebookHelpers.livebook_string(StartingDoctestWrong)
+      end)
+    end
+
+    test "finishing a doc test wrong" do
+      message = "Parsing error - doctest can't have blank lines in them"
+
+      assert_raise(RuntimeError, message, fn ->
+        LivebookHelpers.livebook_string(FinishingDoctestWrong)
       end)
     end
 
@@ -105,7 +130,8 @@ defmodule LivebookHelpersTest do
     end
 
     test "behaviours docs" do
-      assert LivebookHelpers.livebook_string(Behave) == "<!-- vim: syntax=markdown -->\n\n# Behave\n\n## thing/1\n\nThis is a doc for a callback, dope right?\n"
+      assert LivebookHelpers.livebook_string(Behave) ==
+               "<!-- vim: syntax=markdown -->\n\n# Behave\n\n## thing/1\n\nThis is a doc for a callback, dope right?\n"
     end
 
     test "nested modules" do

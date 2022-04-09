@@ -52,7 +52,6 @@ defmodule LivebookHelpers.MixProject do
     Mix.Task.run("create_livebook_from_module", ["LivebookHelpers", "my_livebook"])
   end
 
-
   def application do
     [extra_applications: [:logger]]
   end
