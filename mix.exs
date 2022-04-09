@@ -13,6 +13,7 @@ defmodule LivebookHelpers.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       description: description(),
       source_url: @source_url,
+      aliases: aliases(),
       deps: deps(),
       docs: [
         extras: ["README.md"],
@@ -38,6 +39,19 @@ defmodule LivebookHelpers.MixProject do
   end
 
   defp elixirc_paths(_), do: ["lib"]
+
+  defp aliases() do
+    [docs: ["docs", &copy_pictures/1, &create_livebook/1]]
+  end
+
+  defp copy_pictures(_) do
+    File.cp_r(Path.expand("./images/"), Path.expand("./doc/images/"))
+  end
+
+  defp create_livebook(_) do
+    Mix.Task.run("create_livebook_from_module", ["ChonkOMeter", "chonk_o_meter_livebook"])
+  end
+
 
   def application do
     [extra_applications: [:logger]]
