@@ -14,8 +14,7 @@ defmodule LivebookHelpersTest do
     end
 
     test "Multi line doctests" do
-      s = LivebookHelpers.livebook_string(Enum)
-      IO.puts(s)
+      # s = LivebookHelpers.livebook_string(Enum)
     end
 
     test "When a return value in a doctest spans multiple lines we are all good" do
