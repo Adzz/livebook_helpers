@@ -9,14 +9,17 @@ defmodule LivebookHelpersTest do
   describe "livebook_string/1" do
     test "bullet points" do
       s = LivebookHelpers.livebook_string(Bullets)
-      # IO.puts(s)
       assert s ==
-               "<!-- vim: syntax=markdown -->\n\n# Bullets\n\n## test_fun/0\n\nChunks the `enumerable` with fine grained control when every chunk is emitted.\n`chunk_fun` receives the current element and the accumulator and must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk and continue with the accumulator\n    line wraps are fine too.\n  * `{:cont, acc}` to not emit any chunk and continue with the accumulator\n    * nested bullet points are cool\n  * `{:halt, acc}` to halt chunking over the `enumerable`.\n    what about linew wraps AND\n    * nested bullet points??? a mad mad\n      wrapped nested bullet point. what a time.\n  * guess again\n\n`after_fun` is invoked with the final accumulator when iteration isfinished (or `halt`ed) to handle any trailing elements that were returned\nas part of an accumulator, but were not emitted as a chunk by `chunk_fun`.\nIt must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk. The chunk will be appended to the\n    list of already emitted chunks.\n  * `{:cont, acc}` to not emit a chunk\n\nThe `acc` in `after_fun` is required in order to mirror the tuple formatfrom `chunk_fun` but it will be discarded since the traversal is complete.\n\nReturns a list of emitted chunks.\n\n## Examples\n\n```elixir\nchunk_fun = fn element, acc ->\n  if rem(element, 2) == 0 do\n    {:cont, Enum.reverse([element | acc]), []}\n  else\n    {:cont, [element | acc]}\n  end\nend\n\nafter_fun = fn\n  [] -> {:cont, []}\n  acc -> {:cont, Enum.reverse(acc), []}\nend\n\nEnum.chunk_while(1..10, [], chunk_fun, after_fun)\n```\n```elixir\nEnum.chunk_while([1, 2, 3, 5, 7], [], chunk_fun, after_fun)\n```\n\n\n"
+               "<!-- vim: syntax=markdown -->\n\n# Bullets\n\n## test_fun/0\n\nChunks the `enumerable` with fine grained control when every chunk is emitted.\n`chunk_fun` receives the current element and the accumulator and must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk and continue with the accumulator\n    line wraps are fine too.\n  * `{:cont, acc}` to not emit any chunk and continue with the accumulator\n    * nested bullet points are cool\n  * `{:halt, acc}` to halt chunking over the `enumerable`.\n    what about linew wraps AND\n    * nested bullet points??? a mad mad\n      wrapped nested bullet point. what a time.\n  * guess again\n\n`after_fun` is invoked with the final accumulator when iteration isfinished (or `halt`ed) to handle any trailing elements that were returned\nas part of an accumulator, but were not emitted as a chunk by `chunk_fun`.\nIt must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk. The chunk will be appended to the\n    list of already emitted chunks.\n  * `{:cont, acc}` to not emit a chunk\n\nThe `acc` in `after_fun` is required in order to mirror the tuple formatfrom `chunk_fun` but it will be discarded since the traversal is complete.\n\nReturns a list of emitted chunks.\n\n## Examples\n\n```elixir\nchunk_fun = fn element, acc ->\n  if rem(element, 2) == 0 do\n    {:cont, Enum.reverse([element | acc]), []}\n  else\n    {:cont, [element | acc]}\n  end\nend\n\nafter_fun = fn\n  [] -> {:cont, []}\n  acc -> {:cont, Enum.reverse(acc), []}\nend\n\nEnum.chunk_while(1..10, [], chunk_fun, after_fun)\n```\n```elixir\nEnum.chunk_while([1, 2, 3, 5, 7], [], chunk_fun, after_fun)\n```\n\n"
     end
 
     test "Multi line doctests" do
-      # s = LivebookHelpers.livebook_string(Enum)
-      # IO.puts(s)
+      s = LivebookHelpers.livebook_string(Enum)
+      IO.puts(s)
+    end
+
+    test "When a return value in a doctest spans multiple lines we are all good" do
+      assert LivebookHelpers.livebook_string(DoctestSpansLines) == "<!-- vim: syntax=markdown -->\n\n# DoctestSpansLines\n\nof said module:\n\n```elixir\nusers = [\n  %{name: \"Ellis\", birthday: ~D[1943-05-11]},\n  %{name: \"Lovelace\", birthday: ~D[1815-12-10]},\n  %{name: \"Turing\", birthday: ~D[1912-06-23]}\n]\n\nEnum.min_max_by(users, & &1.birthday, Date)\n```\nFinally, if you don't want to raise on empty enumerables, you can pass\nthe empty fallback:\n\n```elixir\nEnum.min_max_by([], &String.length/1, fn -> nil end)\n```\n\n"
     end
 
     test "existing elixir cells stay as elixir cells" do
@@ -30,8 +33,9 @@ defmodule LivebookHelpersTest do
     end
 
     test "doctests in doctests are allowed - they are the same test until there is a newline" do
-      assert LivebookHelpers.livebook_string(DoctestInDoctest) ==
-               "<!-- vim: syntax=markdown -->\n\n# DoctestInDoctest\n\nThis is not allowed:\n\n```elixir\n1 * 1\n2\n```\n\nThis is:\n\n```elixir\n1 * 1\n2\n```\n\nAnd this:\n\n```elixir\n1 * 1\n```\n\n```elixir\n2\n```\n\n"
+      s = LivebookHelpers.livebook_string(DoctestInDoctest)
+      assert s ==
+               "<!-- vim: syntax=markdown -->\n\n# DoctestInDoctest\n\nThis is allowed:\n\n```elixir\n1 * 1\n2\n```\nThis is:\n\n```elixir\n1 * 1\n2\n```\nAnd this:\n\n```elixir\n1 * 1\n```\n```elixir\n2\n```\n"
     end
 
     test "starting doc test wrong" do
@@ -65,7 +69,7 @@ defmodule LivebookHelpersTest do
 
     test "macros fns work" do
       assert LivebookHelpers.livebook_string(MacroWithDoc) ==
-               "<!-- vim: syntax=markdown -->\n\n# MacroWithDoc\n\n## with_a_doc/0\n\nReturns 1 probably.\n\n```elixir\n1 + 1\n```\n\n"
+               "<!-- vim: syntax=markdown -->\n\n# MacroWithDoc\n\n## with_a_doc/0\n\nReturns 1 probably.\n\n```elixir\n1 + 1\n```\n"
     end
 
     test "fns work" do
@@ -99,7 +103,7 @@ defmodule LivebookHelpersTest do
 
     test "typedocs" do
       assert LivebookHelpers.livebook_string(TypeDocs) ==
-               "<!-- vim: syntax=markdown -->\n\n# TypeDocs\n\n## fun_time/1\n\ndoc AND a spec?!\n\n## other_thing\n\nThis is a type\n## final\n\nThis is a type lower down the module, can it have elixir cells in it?\n\n```elixir\n1 + 1\n```\n\nThis probably wont test?\n\n```elixir\n\"example elixir though\"\n```\n"
+               "<!-- vim: syntax=markdown -->\n\n# TypeDocs\n\n## fun_time/1\n\ndoc AND a spec?!\n\n## other_thing\n\nThis is a type\n## final\n\nThis is a type lower down the module, can it have elixir cells in it?\n\n```elixir\n1 + 1\n```\nThis probably wont test?\n\n```elixir\n\"example elixir though\"\n```\n"
     end
 
     test "protocols" do

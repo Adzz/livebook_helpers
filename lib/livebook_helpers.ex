@@ -139,7 +139,6 @@ defmodule LivebookHelpers do
         #{parse_module_doc(module_doc)}\
         """
 
-        # function_docs |> IO.inspect(limit: :infinity, label: "dd")
         process_function_docs(function_docs, livebook)
     end
   end
@@ -233,6 +232,12 @@ defmodule LivebookHelpers do
     raise "Parsing error - missing the beginning iex> of the doc test"
   end
 
+  # Seems like one space is also allowed??? See Enum.slide docs as an example.
+  def parse_elixir_cells([" *" <> bullet_point | rest], livebook) do
+    {remaining_lines, bullets} = parse_bullet_point(rest, 1, "  *" <> bullet_point)
+    parse_elixir_cells(remaining_lines, livebook <> bullets)
+  end
+
   def parse_elixir_cells(["  *" <> bullet_point | rest], livebook) do
     # The 2 is the current level of indentation. It's needed to know about
     {remaining_lines, bullets} = parse_bullet_point(rest, 2, "  *" <> bullet_point)
@@ -240,6 +245,10 @@ defmodule LivebookHelpers do
   end
 
   # These need to come after the "   ...>" and "    iex>" for obvious reasons.
+  # The idea here is that we have reached the expected return value, but the wrinkle is
+  # that it can span multiple lines it seems. Which means there must always be at least
+  # one new line after the return of a doctest. Not sure if the community know this but
+  # this would allow us to generate an Enum livebook for example.
   def parse_elixir_cells(["    " <> code_sample | rest], livebook) do
     {remaining_lines, elixir_cell} = parse_four_space_code_blocks(rest, code_sample <> "\n")
     parse_elixir_cells(remaining_lines, livebook <> elixir_cell)
@@ -301,12 +310,6 @@ defmodule LivebookHelpers do
 
   # If the next line is anything else (ie not a 4 space indented line or new line) we are done.
   def parse_four_space_code_blocks(remaining_lines, four_space_elixir_block) do
-    # |> IO.inspect(limit: :infinity, label: "")
-
-    # It might end up being easier to do a another pass once we have created the livebook
-    # where we format all the elixir cells. But even then... when are they elixir cells
-    # and when are they snippets in the markdown. We know only because we parsed from a
-    # doctest etc.
     elixir_cell = """
     ```elixir
     #{Code.format_string!(four_space_elixir_block)}
@@ -335,8 +338,14 @@ defmodule LivebookHelpers do
   # Here we are one line after the ...> which means we are on the last line of a doctest.
   # This is the output and so can be ignored because Livebook will output it when you run
   # the cell. But it means we have collected all of the lines and so can format the cell
-  # and save it.
-  def parse_doctest([_line | rest], elixir_cell) do
+  # and save it. The wrinkle is that this might span multiple lines, so we need to keep
+  # ignoring until we find a new line with no spaces I think...
+  def parse_doctest(["    " <> _line | rest], elixir_cell) do
+    parse_doctest_assertion(rest, elixir_cell)
+  end
+
+  # This means we have reached a new line so the assertion is over.
+  def parse_doctest_assertion(["" | rest], elixir_cell) do
     elixir_cell = """
     ```elixir
     #{Code.format_string!(elixir_cell)}
@@ -344,6 +353,44 @@ defmodule LivebookHelpers do
     """
 
     {rest, elixir_cell}
+  end
+
+  # Bit weird but an iex after an assertion seems to want to use the previous elixir cells
+  # data. See this example:
+
+  # ```
+  # ## Examples
+
+  #     iex> chunk_fun = fn element, acc ->
+  #     ...>   if rem(element, 2) == 0 do
+  #     ...>     {:cont, Enum.reverse([element | acc]), []}
+  #     ...>   else
+  #     ...>     {:cont, [element | acc]}
+  #     ...>   end
+  #     ...> end
+  #     iex> after_fun = fn
+  #     ...>   [] -> {:cont, []}
+  #     ...>   acc -> {:cont, Enum.reverse(acc), []}
+  #     ...> end
+  #     iex> Enum.chunk_while(1..10, [], chunk_fun, after_fun)
+  #     [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
+  #     iex> Enum.chunk_while([1, 2, 3, 5, 7], [], chunk_fun, after_fun)
+  #     [[1, 2], [3, 5, 7]]
+  #
+  # ```
+  def parse_doctest_assertion(["    iex>" <> line | rest], elixir_cell) do
+    formatted = """
+    ```elixir
+    #{Code.format_string!(elixir_cell)}
+    ```
+    """
+    {remaining_lines, elixir_cell} = parse_doctest(["    iex>" <> line | rest], "\n")
+    {remaining_lines, formatted <> elixir_cell}
+  end
+
+  # If we start with at least 4 spaces then we know we are still asserting.
+  def parse_doctest_assertion(["    " <> _line | rest], elixir_cell) do
+    parse_doctest_assertion(rest, elixir_cell)
   end
 
   def parse_bullet_point(["" | rest], indentation, livebook) do

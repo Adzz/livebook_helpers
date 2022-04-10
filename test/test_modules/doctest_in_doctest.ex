@@ -1,6 +1,6 @@
 defmodule DoctestInDoctest do
   @moduledoc """
-  This is not allowed:
+  This is allowed:
 
       iex> 1 * 1
       iex> 2
