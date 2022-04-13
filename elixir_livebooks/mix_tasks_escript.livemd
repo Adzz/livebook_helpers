@@ -1,0 +1,9 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.Escript
+
+Lists all installed escripts.
+
+Escripts are installed at `~/.mix/escripts`. Add that path to your `PATH` environment variable
+to be able to run installed escripts from any directory.
+

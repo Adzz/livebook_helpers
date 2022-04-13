@@ -1,0 +1,61 @@
+<!-- vim: syntax=markdown -->
+
+# Module.Types.Helpers
+
+## Function flat_map_ok/2
+
+Like `Enum.flat_map/2` but only continues while `fun` returns `{:ok, list}`
+and stops on `{:error, reason}`.
+
+## Function flat_map_reduce_ok/3
+
+Like `Enum.flat_map_reduce/3` but only continues while `fun` returns `{:ok, list, acc}`
+and stops on `{:error, reason}`.
+
+## Function get_meta/1
+
+Returns the AST metadata.
+
+## Function guards_to_or/1
+
+Combines a list of guard expressions `when x when y when z` to an expression
+combined with `or`, `x or y or z`.
+
+## Function map_ok/2
+
+Like `Enum.map/2` but only continues while `fun` returns `{:ok, elem}`
+and stops on `{:error, reason}`.
+
+## Function map_reduce_ok/3
+
+Like `Enum.map_reduce/3` but only continues while `fun` returns `{:ok, elem, acc}`
+and stops on `{:error, reason}`.
+
+## Function oks_or_errors/1
+
+Given a list of `[{:ok, term()} | {:error, term()}]` it returns a list of
+errors `{:error, [term()]}` in case of at least one error or `{:ok, [term()]}`
+if there are no errors.
+
+## Function reduce_ok/3
+
+Like `Enum.reduce/3` but only continues while `fun` returns `{:ok, acc}`
+and stops on `{:error, reason}`.
+
+## Function unzip_ok/1
+
+Like `Enum.unzip/1` but only continues while `fun` returns `{:ok, elem1, elem2}`
+and stops on `{:error, reason}`.
+
+## Function var_name/1
+
+Returns unique identifier for the current assignment of the variable.
+
+## Function zip_many/1
+
+Like `Enum.zip/1` but will zip multiple lists together instead of only two.
+
+## Macro is_var/1
+
+Guard function to check if an AST node is a variable.
+

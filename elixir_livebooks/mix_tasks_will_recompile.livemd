@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.WillRecompile
+
+## Function run/1
+
+Annotates the current project will recompile.
+

@@ -1,0 +1,10 @@
+<!-- vim: syntax=markdown -->
+
+# ImplementedProto.Implementation
+
+Doc for implementation.
+not sure you should do this but it probably works.
+
+## Function thing/1
+
+this is a doc

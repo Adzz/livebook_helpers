@@ -1,0 +1,7 @@
+<!-- vim: syntax=markdown -->
+
+# Behave
+
+## thing/1
+
+This is a doc for a callback, dope right?

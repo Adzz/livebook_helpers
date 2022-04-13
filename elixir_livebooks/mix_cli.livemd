@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.CLI
+
+## Function main/1
+
+Runs Mix according to the command line arguments.
+

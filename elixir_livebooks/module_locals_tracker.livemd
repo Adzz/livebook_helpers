@@ -1,0 +1,46 @@
+<!-- vim: syntax=markdown -->
+
+# Module.LocalsTracker
+
+## Function add_defaults/5
+
+Adds and tracks defaults for a definition into the tracker.
+
+## Function add_import/4
+
+Adds an import dispatch to the given target.
+
+## Function add_local/5
+
+Adds a local dispatch from-to the given target.
+
+## Function collect_imports_conflicts/2
+
+Collect all conflicting imports with the given functions
+
+## Function collect_undefined_locals/2
+
+Collect undefined functions based on local calls and existing definitions.
+
+## Function collect_unused_locals/3
+
+Collect all unused definitions based on the private
+given, also accounting the expected number of default
+clauses a private function have.
+
+## Function reachable_from/2
+
+Returns all local nodes reachable from `vertex`.
+
+By default, all public functions are reachable.
+A private function is only reachable if it has
+a public function that it invokes directly.
+
+## Function reattach/6
+
+Reattach a previously yanked node.
+
+## Function yank/2
+
+Yanks a local node. Returns its in and out vertices in a tuple.
+

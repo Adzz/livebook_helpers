@@ -1,0 +1,31 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Dep.Loader
+
+## Function children/0
+
+Gets all direct children of the current `Mix.Project`
+as a `Mix.Dep` struct. Umbrella project dependencies
+are included as children.
+
+By default, it will filter all dependencies that does not match
+current environment, behaviour can be overridden via options.
+
+## Function load/2
+
+Loads the given dependency information, including its
+latest status and children.
+
+## Function skip?/2
+
+Checks if a dependency must be skipped according to the environment.
+
+## Function split_by_env_and_target/2
+
+Partitions loaded dependencies by environment.
+
+## Function vsn_match/3
+
+Checks if a requirement from a dependency matches
+the given version.
+

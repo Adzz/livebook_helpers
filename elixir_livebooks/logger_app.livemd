@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# Logger.App
+
+## Function stop/0
+
+Stops the application without sending messages to error logger.
+

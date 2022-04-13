@@ -1,0 +1,31 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.Local.Hex
+
+Installs Hex locally.
+
+```elixir
+mix(local.hex)
+```
+If installing a precompiled Hex does not work, you can compile and install
+Hex directly with this command:
+
+```elixir
+mix(archive.install(github(hexpm / hex(branch(latest)))))
+```
+## Command line options
+
+  * `--force` - forces installation without a shell prompt; primarily
+    intended for automation in build systems like `make`
+
+  * `--if-missing` - performs installation only if Hex is not installed yet;
+    intended to avoid repeatedly reinstalling Hex in automation when a script
+    may be run multiple times
+
+If both options are set, the shell prompt is skipped and Hex is notre-installed if it was already installed.
+
+## Mirrors
+
+If you want to change the [default mirror](https://repo.hex.pm)
+used for fetching Hex, set the `HEX_MIRROR` environment variable.
+

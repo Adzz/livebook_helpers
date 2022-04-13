@@ -1,0 +1,34 @@
+<!-- vim: syntax=markdown -->
+
+# IEx.Broker
+
+## Function child_spec/1
+
+Returns a specification to start this module under a supervisor.
+
+See `Supervisor`.
+
+## Function evaluator/1
+
+Finds the evaluator and server running inside `:user_drv`, on this node exclusively.
+
+## Function register/1
+
+Registers an IEx server in the broker.
+
+All instances, except shell ones, are registered.
+
+## Function respond/3
+
+Client responds to a takeover request.
+
+The broker's PID is needed to support remote shells.
+
+## Function shell/0
+
+Finds the IEx server running inside `:user_drv`, on this node exclusively.
+
+## Function take_over/3
+
+Client requests a takeover.
+

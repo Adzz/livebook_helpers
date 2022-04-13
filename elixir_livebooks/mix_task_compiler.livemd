@@ -1,0 +1,55 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Task.Compiler
+
+This module defines the behaviour for a Mix task that does compilation.
+
+A Mix compiler task can be defined by simply using `Mix.Task.Compiler`
+in a module whose name starts with `Mix.Tasks.Compile.` and defining
+the [`run/1`](`c:run/1`) function:
+
+```elixir
+defmodule Mix.Tasks.Compile.MyLanguage do
+  use Mix.Task.Compiler
+
+  def run(_args) do
+    :ok
+  end
+end
+```
+The [`run/1`](`c:run/1`) function returns an atom indicating the status of the
+compilation, and optionally can also return a list of "diagnostics"
+such as warnings or compilation errors. Doing this enables code
+editors to display issues inline without having to analyze the
+command-line output.
+
+If the compiler uses manifest files to track stale sources, it should
+define `manifests/0`, and if it writes any output to disk it should
+also define `clean/0`.
+
+A compiler supports the same attributes for configuration and
+documentation as a regular Mix task. See `Mix.Task` for more information.
+
+## Function after_compiler/2
+
+Adds a callback that runs after a given compiler.
+
+The callback is invoked after the compiler runs and
+it receives a tuple with current status and the list
+of diagnostic. It must return the updated status and
+diagnostics.
+
+## clean/0
+
+Removes build artifacts and manifests.
+
+## manifests/0
+
+Lists manifest files for the compiler.
+
+## run/1
+
+Receives command-line arguments and performs compilation. If it
+produces errors, warnings, or any other diagnostic information,
+it should return a tuple with the status and a list of diagnostics.
+

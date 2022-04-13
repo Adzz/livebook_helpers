@@ -1,0 +1,53 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Local
+
+## Function append_archives/0
+
+Appends archive paths to the Erlang code path.
+
+## Function append_paths/0
+
+Appends Mix paths to the Erlang code path.
+
+## Function archive_ebin/1
+
+Returns the ebin path of an archive.
+
+## Function archive_name/1
+
+Returns the name of an archive given a path.
+
+## Function archives_tasks/0
+
+Returns all tasks in local archives.
+
+## Function check_elixir_version_in_ebin/1
+
+Checks Elixir version requirement stored in the ebin directory
+and print a warning if it is not satisfied.
+
+## Function find_matching_versions_from_signed_csv!/2
+
+Fetches the given signed CSV files, verifies and returns the matching
+Elixir version, artifact version and artifact's checksum.
+
+Used to install both Rebar and Hex from S3.
+
+## Function name_for/2
+
+Returns the name for an archive or an escript, based on the project config.
+
+## Examples
+
+```elixir
+Mix.Local.name_for(:archives, app: "foo", version: "0.1.0")
+```
+```elixir
+Mix.Local.name_for(:escripts, escript: [name: "foo"])
+```
+
+## Function remove_archives/0
+
+Removes archive paths from Erlang code path.
+

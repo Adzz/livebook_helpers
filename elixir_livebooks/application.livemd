@@ -1,0 +1,714 @@
+<!-- vim: syntax=markdown -->
+
+# Application
+
+A module for working with applications and defining application callbacks.
+
+Applications are the idiomatic way to package software in Erlang/OTP. To get
+the idea, they are similar to the "library" concept common in other
+programming languages, but with some additional characteristics.
+
+An application is a component implementing some specific functionality, with a
+standardized directory structure, configuration, and life cycle. Applications
+are *loaded*, *started*, and *stopped*. Each application also has its own
+environment, which provides a unified API for configuring each application.
+
+Developers typically interact with the application environment and its
+callback module. Therefore those will be the topics we will cover first
+before jumping into details about the application resource file and life-cycle.
+
+## The application environment
+
+Each application has its own environment. The environment is a keyword list
+that maps atoms to terms. Note that this environment is unrelated to the
+operating system environment.
+
+By default, the environment of an application is an empty list. In a Mix
+project's `mix.exs` file, you can set the `:env` key in `application/0`:
+
+```elixir
+def application do
+  [env: [db_host: "localhost"]]
+end
+```
+Now, in your application, you can read this environment by using functions
+such as `fetch_env!/2` and friends:
+
+```elixir
+defmodule MyApp.DBClient do
+  def start_link() do
+    SomeLib.DBClient.start_link(host: db_host())
+  end
+
+  defp db_host do
+    Application.fetch_env!(:my_app, :db_host)
+  end
+end
+```
+In Mix projects, the environment of the application and its dependencies can
+be overridden via the `config/config.exs` and `config/runtime.exs` files. The
+former is loaded at build-time, before your code compiles, and the latter at
+runtime, just before your app starts. For example, someone using your application
+can override its `:db_host` environment variable as follows:
+
+```elixir
+import Config
+config :my_app, :db_host, "db.local"
+```
+See the "Configuration" section in the `Mix` module for more information.
+
+You can also change the application environment dynamically by using functions
+such as `put_env/3` and `delete_env/2`. However, as a rule of thumb, each application
+is responsible for its own environment. Please do not use the functions in this
+module for directly accessing or modifying the environment of other applications.
+
+### Compile-time environment
+
+In the previous example, we read the application environment at runtime:
+
+```elixir
+defmodule MyApp.DBClient do
+  def start_link() do
+    SomeLib.DBClient.start_link(host: db_host())
+  end
+
+  defp db_host do
+    Application.fetch_env!(:my_app, :db_host)
+  end
+end
+```
+In other words, the environment key `:db_host` for application `:my_app`
+will only be read when `MyApp.DBClient` effectively starts. While reading
+the application environment at runtime is the preferred approach, in some
+rare occasions you may want to use the application environment to configure
+the compilation of a certain project. This is often done by calling `get_env/3`
+outside of a function:
+
+```elixir
+defmodule MyApp.DBClient do
+  @db_host Application.get_env(:my_app, :db_host, "db.local")
+
+  def start_link() do
+    SomeLib.DBClient.start_link(host: @db_host)
+  end
+end
+```
+This approach has one big limitation: if you change the value of the
+application environment after the code is compiled, the value used at
+runtime is not going to change! For example, if your `config/runtime.exs`
+has:
+
+```elixir
+config :my_app, :db_host, "db.production"
+```
+This value will have no effect as the code was compiled to connect to "db.local",
+which is mostly likely unavailable in the production environment.
+
+For those reasons, reading the application environment at runtime should be the
+first choice. However, if you really have to read the application environment
+during compilation, we recommend you to use `compile_env/3` instead:
+
+```elixir
+require Application
+@db_host Application.compile_env(:my_app, :db_host, "db.local")
+```
+By using `compile_env/3`, tools like Mix will store the values used during
+compilation and compare the compilation values with the runtime values whenever
+your system starts, raising an error in case they differ.
+
+## The application callback module
+
+Applications can be loaded, started, and stopped. Generally, build tools
+like Mix take care of starting an application and all of its dependencies
+for you, but you can also do it manually by calling:
+
+```elixir
+{:ok, _} = Application.ensure_all_started(:some_app)
+```
+When an application starts, developers may configure a callback module
+that executes custom code. Developers use this callback to start the
+application supervision tree.
+
+The first step to do so is to add a `:mod` key to the `application/0`
+definition in your `mix.exs` file. It expects a tuple, with the application
+callback module and start argument (commonly an empty list):
+
+```elixir
+def application do
+  [mod: {MyApp, []}]
+end
+```
+The `MyApp` module given to `:mod` needs to implement the `Application` behaviour.
+This can be done by putting `use Application` in that module and implementing the
+`c:start/2` callback, for example:
+
+```elixir
+defmodule MyApp do
+  use Application
+
+  def start(_type, _args) do
+    children = []
+    Supervisor.start_link(children, strategy: :one_for_one)
+  end
+end
+```
+The `c:start/2` callback has to spawn and link a supervisor and return `{:ok,
+pid}` or `{:ok, pid, state}`, where `pid` is the PID of the supervisor, and
+`state` is an optional application state. `args` is the second element of the
+tuple given to the `:mod` option.
+
+The `type` argument passed to `c:start/2` is usually `:normal` unless in a
+distributed setup where application takeovers and failovers are configured.
+Distributed applications are beyond the scope of this documentation.
+
+When an application is shutting down, its `c:stop/1` callback is called after
+the supervision tree has been stopped by the runtime. This callback allows the
+application to do any final cleanup. The argument is the state returned by
+`c:start/2`, if it did, or `[]` otherwise. The return value of `c:stop/1` is
+ignored.
+
+By using `Application`, modules get a default implementation of `c:stop/1`
+that ignores its argument and returns `:ok`, but it can be overridden.
+
+Application callback modules may also implement the optional callback
+`c:prep_stop/1`. If present, `c:prep_stop/1` is invoked before the supervision
+tree is terminated. Its argument is the state returned by `c:start/2`, if it did,
+or `[]` otherwise, and its return value is passed to `c:stop/1`.
+
+## The application resource file
+
+In the sections above, we have configured an application in the
+`application/0` section of the `mix.exs` file. Ultimately, Mix will use
+this configuration to create an [*application resource
+file*](https://erlang.org/doc/man/application.html), which is a file called
+`APP_NAME.app`. For example, the application resource file of the OTP
+application `ex_unit` is called `ex_unit.app`.
+
+You can learn more about the generation of application resource files in
+the documentation of `Mix.Tasks.Compile.App`, available as well by running
+`mix help compile.app`.
+
+## The application life cycle
+
+### Loading applications
+
+Applications are *loaded*, which means that the runtime finds and processes
+their resource files:
+
+```elixir
+Application.load(:ex_unit)
+# => :ok
+```
+When an application is loaded, the environment specified in its resource file
+is merged with any overrides from config files.
+
+Loading an application *does not* load its modules.
+
+In practice, you rarely load applications by hand because that is part of the
+start process, explained next.
+
+### Starting applications
+
+Applications are also *started*:
+
+```elixir
+Application.start(:ex_unit)
+# => :ok
+```
+Once your application is compiled, running your system is a matter of starting
+your current application and its dependencies. Differently from other languages,
+Elixir does not have a `main` procedure that is responsible for starting your
+system. Instead, you start one or more applications, each with their own
+initialization and termination logic.
+
+When an application is started, the `Application.load/1` is automatically
+invoked if it hasn't been done yet. Then, it checks if the dependencies listed
+in the `applications` key of the resource file are already started. Having at
+least one dependency not started is an error condition. Functions like
+`ensure_all_started/1` takes care of starting an application and all of its
+dependencies for you.
+
+If the application does not have a callback module configured, starting is
+done at this point. Otherwise, its `c:start/2` callback is invoked. The PID of
+the top-level supervisor returned by this function is stored by the runtime
+for later use, and the returned application state is saved too, if any.
+
+### Stopping applications
+
+Started applications are, finally, *stopped*:
+
+```elixir
+Application.stop(:ex_unit)
+# => :ok
+```
+Stopping an application without a callback module is defined, but except for
+some system tracing, it is in practice a no-op.
+
+Stopping an application with a callback module has three steps:
+
+  1. If present, invoke the optional callback `c:prep_stop/1`.
+  2. Terminate the top-level supervisor.
+  3. Invoke the required callback `c:stop/1`.
+
+The arguments passed to the callbacks are related to the state optionally
+returned by `c:start/2`, and are documented in the section about the callback
+module above.
+
+It is important to highlight that step 2 is a blocking one. Termination of a
+supervisor triggers a recursive chain of children terminations, therefore
+orderly shutting down all descendant processes. The `c:stop/1` callback is
+invoked only after termination of the whole supervision tree.
+
+Shutting down a live system cleanly can be done by calling `System.stop/1`. It
+will shut down every application in the opposite order they had been started.
+
+By default, a SIGTERM from the operating system will automatically translate to
+`System.stop/0`. You can also have more explicit control over operating system
+signals via the `:os.set_signal/2` function.
+
+## Tooling
+
+The Mix build tool automates most of the application management tasks. For example,
+`mix test` automatically starts your application dependencies and your application
+itself before your test runs. `mix run --no-halt` boots your current project and
+can be used to start a long running system. See `mix help run`.
+
+Developers can also use `mix release` to build **releases**. Releases are able to
+package all of your source code as well as the Erlang VM into a single directory.
+Releases also give you explicit control over how each application is started and in
+which order. They also provide a more streamlined mechanism for starting and
+stopping systems, debugging, logging, as well as system monitoring.
+
+Finally, Elixir provides tools such as escripts and archives, which are
+different mechanisms for packaging your application. Those are typically used
+when tools must be shared between developers and not as deployment options.
+See `mix help archive.build` and `mix help escript.build` for more detail.
+
+## Further information
+
+For further details on applications please check the documentation of the
+[`:application` Erlang module](`:application`), and the
+[Applications](https://erlang.org/doc/design_principles/applications.html)
+section of the [OTP Design Principles User's
+Guide](https://erlang.org/doc/design_principles/users_guide.html).
+
+## Function app_dir/1
+
+Gets the directory for app.
+
+This information is returned based on the code path. Here is an
+example:
+
+```elixir
+File.mkdir_p!("foo/ebin")
+Code.prepend_path("foo/ebin")
+Application.app_dir(:foo)
+# => "foo"
+```
+Even though the directory is empty and there is no `.app` file
+it is considered the application directory based on the name
+"foo/ebin". The name may contain a dash `-` which is considered
+to be the app version and it is removed for the lookup purposes:
+
+```elixir
+File.mkdir_p!("bar-123/ebin")
+Code.prepend_path("bar-123/ebin")
+Application.app_dir(:bar)
+# => "bar-123"
+```
+For more information on code paths, check the `Code` module in
+Elixir and also Erlang's [`:code` module](`:code`).
+
+## Function app_dir/2
+
+Returns the given path inside `app_dir/1`.
+
+If `path` is a string, then it will be used as the path inside `app_dir/1`. If
+`path` is a list of strings, it will be joined (see `Path.join/1`) and the result
+will be used as the path inside `app_dir/1`.
+
+## Examples
+
+```elixir
+File.mkdir_p!("foo/ebin")
+Code.prepend_path("foo/ebin")
+
+Application.app_dir(:foo, "my_path")
+# => "foo/my_path"
+
+Application.app_dir(:foo, ["my", "nested", "path"])
+# => "foo/my/nested/path"
+```
+## Function delete_env/3
+
+Deletes the `key` from the given `app` environment.
+
+It receives the same options as `put_env/4`. Returns `:ok`.
+
+## Function ensure_all_started/2
+
+Ensures the given `app` and its applications are started.
+
+Same as `start/2` but also starts the applications listed under
+`:applications` in the `.app` file in case they were not previously
+started.
+
+## Function ensure_loaded/1
+
+Ensures the given `app` is loaded.
+
+Same as `load/2` but returns `:ok` if the application was already
+loaded.
+
+## Function ensure_started/2
+
+Ensures the given `app` is started.
+
+Same as `start/2` but returns `:ok` if the application was already
+started. This is useful in scripts and in test setup, where test
+applications need to be explicitly started:
+
+```elixir
+:ok = Application.ensure_started(:my_test_dep)
+```
+## Function fetch_env/2
+
+Returns the value for `key` in `app`'s environment in a tuple.
+
+If the configuration parameter does not exist, the function returns `:error`.
+
+## Function fetch_env!/2
+
+Returns the value for `key` in `app`'s environment.
+
+If the configuration parameter does not exist, raises `ArgumentError`.
+
+**Important:** if you are reading the application environment at compilation
+time, for example, inside the module definition instead of inside of a
+function, see `compile_env!/2` instead.
+
+## Function format_error/1
+
+Formats the error reason returned by `start/2`,
+`ensure_started/2`, `stop/1`, `load/1` and `unload/1`,
+returns a string.
+
+## Function get_all_env/1
+
+Returns all key-value pairs for `app`.
+
+## Function get_application/1
+
+Gets the application for the given module.
+
+The application is located by analyzing the spec
+of all loaded applications. Returns `nil` if
+the module is not listed in any application spec.
+
+## Function get_env/3
+
+Returns the value for `key` in `app`'s environment.
+
+If the configuration parameter does not exist, the function returns the
+`default` value.
+
+**Important:** if you are reading the application environment at compilation
+time, for example, inside the module definition instead of inside of a
+function, see `compile_env/3` instead.
+
+**Important:** if you are writing a library to be used by other developers,
+it is generally recommended to avoid the application environment, as the
+application environment is effectively a global storage. For more information,
+read our [library guidelines](library-guidelines.md).
+
+## Examples
+
+`get_env/3` is commonly used to read the configuration of your OTP applications.
+Since Mix configurations are commonly used to configure applications, we will use
+this as a point of illustration.
+
+Consider a new application `:my_app`. `:my_app` contains a database engine which
+supports a pool of databases. The database engine needs to know the configuration for
+each of those databases, and that configuration is supplied by key-value pairs in
+environment of `:my_app`.
+
+```elixir
+config :my_app, Databases.RepoOne,
+  # A database configuration
+  ip: "localhost",
+  port: 5433
+
+config :my_app, Databases.RepoTwo,
+  # Another database configuration (for the same OTP app)
+  ip: "localhost",
+  port: 20717
+
+config :my_app, my_app_databases: [Databases.RepoOne, Databases.RepoTwo]
+```
+Our database engine used by `:my_app` needs to know what databases exist, and
+what the database configurations are. The database engine can make a call to
+`Application.get_env(:my_app, :my_app_databases, [])` to retrieve the list of
+databases (specified by module names).
+
+The engine can then traverse each repository in the list and call
+`Application.get_env(:my_app, Databases.RepoOne)` and so forth to retrieve the
+configuration of each one. In this case, each configuration will be a keyword
+list, so you can use the functions in the `Keyword` module or even the `Access`
+module to traverse it, for example:
+
+```elixir
+config = Application.get_env(:my_app, Databases.RepoOne)
+config[:ip]
+```
+## Function load/1
+
+Loads the given `app`.
+
+In order to be loaded, an `.app` file must be in the load paths.
+All `:included_applications` will also be loaded.
+
+Loading the application does not start it nor load its modules, but
+it does load its environment.
+
+## Function loaded_applications/0
+
+Returns a list with information about the applications which have been loaded.
+
+## Function put_all_env/2
+
+Puts the environment for multiple apps at the same time.
+
+The given config should not:
+
+  * have the same application listed more than once
+  * have the same key inside the same application listed more than once
+
+If those conditions are not met, it will raise.
+It receives the same options as `put_env/4`. Returns `:ok`.
+
+## Function put_env/4
+
+Puts the `value` in `key` for the given `app`.
+
+## Options
+
+  * `:timeout` - the timeout for the change (defaults to `5_000` milliseconds)
+  * `:persistent` - persists the given value on application load and reloads
+
+If `put_env/4` is called before the application is loaded, the applicationenvironment values specified in the `.app` file will override the ones
+previously set.
+
+The `:persistent` option can be set to `true` when there is a need to guarantee
+parameters set with this function will not be overridden by the ones defined
+in the application resource file on load. This means persistent values will
+stick after the application is loaded and also on application reload.
+
+## Function spec/1
+
+Returns the spec for `app`.
+
+The following keys are returned:
+
+  * `:description`
+  * `:id`
+  * `:vsn`
+  * `:modules`
+  * `:maxP`
+  * `:maxT`
+  * `:registered`
+  * `:included_applications`
+  * `:optional_applications`
+  * `:applications`
+  * `:mod`
+  * `:start_phases`
+
+Note the environment is not returned as it can be accessed via`fetch_env/2`. Returns `nil` if the application is not loaded.
+
+## Function spec/2
+
+Returns the value for `key` in `app`'s specification.
+
+See `spec/1` for the supported keys. If the given
+specification parameter does not exist, this function
+will raise. Returns `nil` if the application is not loaded.
+
+## Function start/2
+
+Starts the given `app`.
+
+If the `app` is not loaded, the application will first be loaded using `load/1`.
+Any included application, defined in the `:included_applications` key of the
+`.app` file will also be loaded, but they won't be started.
+
+Furthermore, all applications listed in the `:applications` key must be explicitly
+started before this application is. If not, `{:error, {:not_started, app}}` is
+returned, where `app` is the name of the missing application.
+
+In case you want to automatically load **and start** all of `app`'s dependencies,
+see `ensure_all_started/2`.
+
+The `type` argument specifies the type of the application:
+
+  * `:permanent` - if `app` terminates, all other applications and the entire
+    node are also terminated.
+
+  * `:transient` - if `app` terminates with `:normal` reason, it is reported
+    but no other applications are terminated. If a transient application
+    terminates abnormally, all other applications and the entire node are
+    also terminated.
+
+  * `:temporary` - if `app` terminates, it is reported but no other
+    applications are terminated (the default).
+
+Note that it is always possible to stop an application explicitly by calling`stop/1`. Regardless of the type of the application, no other applications will
+be affected.
+
+Note also that the `:transient` type is of little practical use, since when a
+supervision tree terminates, the reason is set to `:shutdown`, not `:normal`.
+
+## Function started_applications/1
+
+Returns a list with information about the applications which are currently running.
+
+## Function stop/1
+
+Stops the given `app`.
+
+When stopped, the application is still loaded.
+
+## Function unload/1
+
+Unloads the given `app`.
+
+It will also unload all `:included_applications`.
+Note that the function does not purge the application modules.
+
+## Macro compile_env/3
+
+Reads the application environment at compilation time.
+
+Similar to `get_env/3`, except it must be used to read values
+at compile time. This allows Elixir to track when configuration
+values change between compile time and runtime.
+
+The first argument is the application name. The second argument
+`key_or_path` is either an atom key or a path to traverse in
+search of the configuration, starting with an atom key.
+
+For example, imagine the following configuration:
+
+```elixir
+config :my_app, :key, foo: [bar: :baz]
+```
+We can access it during compile time as:
+
+```elixir
+Application.compile_env(:my_app, :key)
+# => [foo: [bar: :baz]]
+
+Application.compile_env(:my_app, [:key, :foo])
+# => [bar: :baz]
+
+Application.compile_env(:my_app, [:key, :foo, :bar])
+# => :baz
+```
+A default value can also be given as third argument. If
+any of the keys in the path along the way is missing, the
+default value is used:
+
+```elixir
+Application.compile_env(:my_app, [:unknown, :foo, :bar], :default)
+# => :default
+
+Application.compile_env(:my_app, [:key, :unknown, :bar], :default)
+# => :default
+
+Application.compile_env(:my_app, [:key, :foo, :unknown], :default)
+# => :default
+```
+Giving a path is useful to let Elixir know that only certain paths
+in a large configuration are compile time dependent.
+
+## Macro compile_env!/2
+
+Reads the application environment at compilation time or raises.
+
+This is the same as `compile_env/3` but it raises an
+`ArgumentError` if the configuration is not available.
+
+## config_change/3
+
+Callback invoked after code upgrade, if the application environment
+has changed.
+
+`changed` is a keyword list of keys and their changed values in the
+application environment. `new` is a keyword list with all new keys
+and their values. `removed` is a list with all removed keys.
+
+## prep_stop/1
+
+Called before stopping the application.
+
+This function is called before the top-level supervisor is terminated. It
+receives the state returned by `c:start/2`, if it did, or `[]` otherwise.
+The return value is later passed to `c:stop/1`.
+
+## start/2
+
+Called when an application is started.
+
+This function is called when an application is started using
+`Application.start/2` (and functions on top of that, such as
+`Application.ensure_started/2`). This function should start the top-level
+process of the application (which should be the top supervisor of the
+application's supervision tree if the application follows the OTP design
+principles around supervision).
+
+`start_type` defines how the application is started:
+
+  * `:normal` - used if the startup is a normal startup or if the application
+    is distributed and is started on the current node because of a failover
+    from another node and the application specification key `:start_phases`
+    is `:undefined`.
+  * `{:takeover, node}` - used if the application is distributed and is
+    started on the current node because of a failover on the node `node`.
+  * `{:failover, node}` - used if the application is distributed and is
+    started on the current node because of a failover on node `node`, and the
+    application specification key `:start_phases` is not `:undefined`.
+
+`start_args` are the arguments passed to the application in the `:mod`specification key (for example, `mod: {MyApp, [:my_args]}`).
+
+This function should either return `{:ok, pid}` or `{:ok, pid, state}` if
+startup is successful. `pid` should be the PID of the top supervisor. `state`
+can be an arbitrary term, and if omitted will default to `[]`; if the
+application is later stopped, `state` is passed to the `stop/1` callback (see
+the documentation for the `c:stop/1` callback for more information).
+
+`use Application` provides no default implementation for the `start/2`
+callback.
+
+## start_phase/3
+
+Starts an application in synchronous phases.
+
+This function is called after `start/2` finishes but before
+`Application.start/2` returns. It will be called once for every start phase
+defined in the application's (and any included applications') specification,
+in the order they are listed in.
+
+## stop/1
+
+Called after an application has been stopped.
+
+This function is called after an application has been stopped, i.e., after its
+supervision tree has been stopped. It should do the opposite of what the
+`c:start/2` callback did, and should perform any necessary cleanup. The return
+value of this callback is ignored.
+
+`state` is the state returned by `c:start/2`, if it did, or `[]` otherwise.
+If the optional callback `c:prep_stop/1` is present, `state` is its return
+value instead.
+
+`use Application` defines a default implementation of this function which does
+nothing and just returns `:ok`.
+

@@ -1,0 +1,25 @@
+<!-- vim: syntax=markdown -->
+
+# IEx.Introspection
+
+## Function b/1
+
+Prints the list of behaviour callbacks or a given callback.
+
+## Function decompose/2
+
+Decomposes an introspection call into `{mod, fun, arity}`,
+`{mod, fun}` or `mod`.
+
+## Function h/1
+
+Prints documentation.
+
+## Function open/1
+
+Opens the given module, mfa, file/line, binary.
+
+## Function t/1
+
+Prints the types for the given module and type documentation.
+

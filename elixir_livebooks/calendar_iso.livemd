@@ -1,0 +1,772 @@
+<!-- vim: syntax=markdown -->
+
+# Calendar.ISO
+
+The default calendar implementation, a Gregorian calendar following ISO 8601.
+
+This calendar implements a proleptic Gregorian calendar and
+is therefore compatible with the calendar used in most countries
+today. The proleptic means the Gregorian rules for leap years are
+applied for all time, consequently the dates give different results
+before the year 1583 from when the Gregorian calendar was adopted.
+
+## ISO 8601 compliance
+
+The ISO 8601 specification is feature-rich, but allows applications
+to selectively implement most parts of it. The choices Elixir makes
+are catalogued below.
+
+### Features
+
+The standard library supports a minimal set of possible ISO 8601 features.
+Specifically, the parser only supports calendar dates and does not support
+ordinal and week formats.
+
+By default Elixir only parses extended-formatted date/times. You can opt-in
+to parse basic-formatted date/times.
+
+`NaiveDateTime.to_iso8601/2` and `DateTime.to_iso8601/2` allow you to produce
+either basic or extended formatted strings, and `Calendar.strftime/2` allows
+you to format datetimes however else you desire.
+
+Elixir does not support reduced accuracy formats (for example, a date without
+the day component) nor decimal precisions in the lowest component (such as
+`10:01:25,5`). No functions exist to parse ISO 8601 durations or time intervals.
+
+#### Examples
+
+Elixir expects the extended format by default when parsing:
+
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23T23:50:07")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("20150123T235007")
+```
+Parsing can be restricted to basic if desired:
+
+```elixir
+Calendar.ISO.parse_naive_datetime("20150123T235007Z", :basic)
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("20150123T235007Z", :extended)
+```
+Only calendar dates are supported in parsing; ordinal and week dates are not.
+
+```elixir
+Calendar.ISO.parse_date("2015-04-15")
+```
+```elixir
+Calendar.ISO.parse_date("2015-105")
+```
+```elixir
+Calendar.ISO.parse_date("2015-W16")
+```
+```elixir
+Calendar.ISO.parse_date("2015-W016-3")
+```
+Years, months, days, hours, minutes, and seconds must be fully specified:
+
+```elixir
+Calendar.ISO.parse_date("2015-04-15")
+```
+```elixir
+Calendar.ISO.parse_date("2015-04")
+```
+```elixir
+Calendar.ISO.parse_date("2015")
+```
+```elixir
+Calendar.ISO.parse_time("23:50:07.0123456")
+```
+```elixir
+Calendar.ISO.parse_time("23:50:07")
+```
+```elixir
+Calendar.ISO.parse_time("23:50")
+```
+```elixir
+Calendar.ISO.parse_time("23")
+```
+### Extensions
+
+The parser and formatter adopt one ISO 8601 extension: extended year notation.
+
+This allows dates to be prefixed with a `+` or `-` sign, extending the range of
+expressible years from the default (`0000..9999`) to `-9999..9999`. Elixir still
+restricts years in this format to four digits.
+
+#### Examples
+
+```elixir
+Calendar.ISO.parse_date("-2015-01-23")
+```
+```elixir
+Calendar.ISO.parse_date("+2015-01-23")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("-2015-01-23 23:50:07")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("+2015-01-23 23:50:07")
+```
+```elixir
+Calendar.ISO.parse_utc_datetime("-2015-01-23 23:50:07Z")
+```
+```elixir
+Calendar.ISO.parse_utc_datetime("+2015-01-23 23:50:07Z")
+```
+### Additions
+
+ISO 8601 does not allow a whitespace instead of `T` as a separator
+between date and times, both when parsing and formatting.
+This is a common enough representation, Elixir allows it during parsing.
+
+The formatting of dates in `NaiveDateTime.to_iso8601/1` and `DateTime.to_iso8601/1`
+do produce specification-compliant string representations using the `T` separator.
+
+#### Examples
+
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23 23:50:07.0123456")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23T23:50:07.0123456")
+```
+```elixir
+Calendar.ISO.parse_utc_datetime("2015-01-23 23:50:07.0123456Z")
+```
+```elixir
+Calendar.ISO.parse_utc_datetime("2015-01-23T23:50:07.0123456Z")
+```
+
+## Function date_to_string/4
+
+Converts the given date into a string.
+
+By default, returns dates formatted in the "extended" format,
+for human readability. It also supports the "basic" format
+by passing the `:basic` option.
+
+## Examples
+
+```elixir
+Calendar.ISO.date_to_string(2015, 2, 28)
+```
+```elixir
+Calendar.ISO.date_to_string(2017, 8, 1)
+```
+```elixir
+Calendar.ISO.date_to_string(-99, 1, 31)
+```
+```elixir
+Calendar.ISO.date_to_string(2015, 2, 28, :basic)
+```
+```elixir
+Calendar.ISO.date_to_string(-99, 1, 31, :basic)
+```
+
+## Function datetime_to_string/12
+
+Converts the datetime (with time zone) into a string.
+
+By default, returns datetimes formatted in the "extended" format,
+for human readability. It also supports the "basic" format
+by passing the `:basic` option.
+
+## Examples
+
+```elixir
+time_zone = "Etc/UTC"
+Calendar.ISO.datetime_to_string(2017, 8, 1, 1, 2, 3, {4, 5}, time_zone, "UTC", 0, 0)
+```
+```elixir
+Calendar.ISO.datetime_to_string(2017, 8, 1, 1, 2, 3, {4, 5}, time_zone, "UTC", 3600, 0)
+```
+```elixir
+Calendar.ISO.datetime_to_string(2017, 8, 1, 1, 2, 3, {4, 5}, time_zone, "UTC", 3600, 3600)
+```
+```elixir
+time_zone = "Europe/Berlin"
+Calendar.ISO.datetime_to_string(2017, 8, 1, 1, 2, 3, {4, 5}, time_zone, "CET", 3600, 0)
+```
+```elixir
+Calendar.ISO.datetime_to_string(2017, 8, 1, 1, 2, 3, {4, 5}, time_zone, "CDT", 3600, 3600)
+```
+```elixir
+time_zone = "America/Los_Angeles"
+Calendar.ISO.datetime_to_string(2015, 2, 28, 1, 2, 3, {4, 5}, time_zone, "PST", -28800, 0)
+```
+```elixir
+Calendar.ISO.datetime_to_string(2015, 2, 28, 1, 2, 3, {4, 5}, time_zone, "PDT", -28800, 3600)
+```
+```elixir
+time_zone = "Europe/Berlin"
+Calendar.ISO.datetime_to_string(2017, 8, 1, 1, 2, 3, {4, 5}, time_zone, "CET", 3600, 0, :basic)
+```
+
+## Function day_of_era/3
+
+Calculates the day and era from the given `year`, `month`, and `day`.
+
+## Examples
+
+```elixir
+Calendar.ISO.day_of_era(0, 1, 1)
+```
+```elixir
+Calendar.ISO.day_of_era(1, 1, 1)
+```
+```elixir
+Calendar.ISO.day_of_era(0, 12, 31)
+```
+```elixir
+Calendar.ISO.day_of_era(0, 12, 30)
+```
+```elixir
+Calendar.ISO.day_of_era(-1, 12, 31)
+```
+
+## Function day_of_week/4
+
+Calculates the day of the week from the given `year`, `month`, and `day`.
+
+It is an integer from 1 to 7, where 1 is the given `starting_on` weekday.
+For example, if `starting_on` is set to `:monday`, then 1 is Monday and
+7 is Sunday.
+
+`starting_on` can also be `:default`, which is equivalent to `:monday`.
+
+## Examples
+
+```elixir
+Calendar.ISO.day_of_week(2016, 10, 31, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 1, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 2, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 3, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 4, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 5, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 6, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(-99, 1, 31, :monday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 10, 31, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 1, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 2, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 3, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 4, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 5, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 11, 6, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(-99, 1, 31, :sunday)
+```
+```elixir
+Calendar.ISO.day_of_week(2016, 10, 31, :saturday)
+```
+
+## Function day_of_year/3
+
+Calculates the day of the year from the given `year`, `month`, and `day`.
+
+It is an integer from 1 to 366.
+
+## Examples
+
+```elixir
+Calendar.ISO.day_of_year(2016, 1, 31)
+```
+```elixir
+Calendar.ISO.day_of_year(-99, 2, 1)
+```
+```elixir
+Calendar.ISO.day_of_year(2018, 2, 28)
+```
+
+## Function day_rollover_relative_to_midnight_utc/0
+
+See `c:Calendar.day_rollover_relative_to_midnight_utc/0` for documentation.
+
+## Function days_in_month/2
+
+Returns how many days there are in the given year-month.
+
+## Examples
+
+```elixir
+Calendar.ISO.days_in_month(1900, 1)
+```
+```elixir
+Calendar.ISO.days_in_month(1900, 2)
+```
+```elixir
+Calendar.ISO.days_in_month(2000, 2)
+```
+```elixir
+Calendar.ISO.days_in_month(2001, 2)
+```
+```elixir
+Calendar.ISO.days_in_month(2004, 2)
+```
+```elixir
+Calendar.ISO.days_in_month(2004, 4)
+```
+```elixir
+Calendar.ISO.days_in_month(-1, 5)
+```
+
+## Function leap_year?/1
+
+Returns if the given year is a leap year.
+
+## Examples
+
+```elixir
+Calendar.ISO.leap_year?(2000)
+```
+```elixir
+Calendar.ISO.leap_year?(2001)
+```
+```elixir
+Calendar.ISO.leap_year?(2004)
+```
+```elixir
+Calendar.ISO.leap_year?(1900)
+```
+```elixir
+Calendar.ISO.leap_year?(-4)
+```
+
+## Function months_in_year/1
+
+Returns how many months there are in the given year.
+
+## Example
+
+```elixir
+Calendar.ISO.months_in_year(2004)
+```
+
+## Function naive_datetime_from_iso_days/1
+
+Converts the `t:Calendar.iso_days/0` format to the datetime format specified by this calendar.
+
+## Examples
+
+```elixir
+Calendar.ISO.naive_datetime_from_iso_days({0, {0, 86400}})
+```
+```elixir
+Calendar.ISO.naive_datetime_from_iso_days({730_485, {0, 86400}})
+```
+```elixir
+Calendar.ISO.naive_datetime_from_iso_days({730_485, {43200, 86400}})
+```
+```elixir
+Calendar.ISO.naive_datetime_from_iso_days({-365, {0, 86_400_000_000}})
+```
+
+## Function naive_datetime_to_iso_days/7
+
+Returns the `t:Calendar.iso_days/0` format of the specified date.
+
+## Examples
+
+```elixir
+Calendar.ISO.naive_datetime_to_iso_days(0, 1, 1, 0, 0, 0, {0, 6})
+```
+```elixir
+Calendar.ISO.naive_datetime_to_iso_days(2000, 1, 1, 12, 0, 0, {0, 6})
+```
+```elixir
+Calendar.ISO.naive_datetime_to_iso_days(2000, 1, 1, 13, 0, 0, {0, 6})
+```
+```elixir
+Calendar.ISO.naive_datetime_to_iso_days(-1, 1, 1, 0, 0, 0, {0, 6})
+```
+
+## Function naive_datetime_to_string/8
+
+Converts the datetime (without time zone) into a string.
+
+By default, returns datetimes formatted in the "extended" format,
+for human readability. It also supports the "basic" format
+by passing the `:basic` option.
+
+## Examples
+
+```elixir
+Calendar.ISO.naive_datetime_to_string(2015, 2, 28, 1, 2, 3, {4, 6})
+```
+```elixir
+Calendar.ISO.naive_datetime_to_string(2017, 8, 1, 1, 2, 3, {4, 5})
+```
+```elixir
+Calendar.ISO.naive_datetime_to_string(2015, 2, 28, 1, 2, 3, {4, 6}, :basic)
+```
+
+## Function parse_date/1
+
+Parses a date `string` in the `:extended` format.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_date("2015-01-23")
+```
+```elixir
+Calendar.ISO.parse_date("2015:01:23")
+```
+```elixir
+Calendar.ISO.parse_date("2015-01-32")
+```
+
+## Function parse_date/2
+
+Parses a date `string` according to a given `format`.
+
+The `format` can either be `:basic` or `:extended`.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_date("20150123", :basic)
+```
+```elixir
+Calendar.ISO.parse_date("20150123", :extended)
+```
+
+## Function parse_naive_datetime/1
+
+Parses a naive datetime `string` in the `:extended` format.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23 23:50:07")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23 23:50:07Z")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23 23:50:07-02:30")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23 23:50:07.0")
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("2015-01-23 23:50:07,0123456")
+```
+
+## Function parse_naive_datetime/2
+
+Parses a naive datetime `string` according to a given `format`.
+
+The `format` can either be `:basic` or `:extended`.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_naive_datetime("20150123 235007", :basic)
+```
+```elixir
+Calendar.ISO.parse_naive_datetime("20150123 235007", :extended)
+```
+
+## Function parse_time/1
+
+Parses a time `string` in the `:extended` format.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_time("23:50:07")
+```
+```elixir
+Calendar.ISO.parse_time("23:50:07Z")
+```
+```elixir
+Calendar.ISO.parse_time("T23:50:07Z")
+```
+
+## Function parse_time/2
+
+Parses a time `string` according to a given `format`.
+
+The `format` can either be `:basic` or `:extended`.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_time("235007", :basic)
+```
+```elixir
+Calendar.ISO.parse_time("235007", :extended)
+```
+
+## Function parse_utc_datetime/1
+
+Parses a UTC datetime `string` in the `:extended` format.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_utc_datetime("2015-01-23 23:50:07Z")
+```
+```elixir
+Calendar.ISO.parse_utc_datetime("2015-01-23 23:50:07+02:30")
+```
+```elixir
+Calendar.ISO.parse_utc_datetime("2015-01-23 23:50:07")
+```
+
+## Function parse_utc_datetime/2
+
+Parses a UTC datetime `string` according to a given `format`.
+
+The `format` can either be `:basic` or `:extended`.
+
+For more information on supported strings, see how this
+module implements [ISO 8601](#module-iso-8601-compliance).
+
+## Examples
+
+```elixir
+Calendar.ISO.parse_utc_datetime("20150123 235007Z", :basic)
+```
+```elixir
+Calendar.ISO.parse_utc_datetime("20150123 235007Z", :extended)
+```
+
+## Function quarter_of_year/3
+
+Calculates the quarter of the year from the given `year`, `month`, and `day`.
+
+It is an integer from 1 to 4.
+
+## Examples
+
+```elixir
+Calendar.ISO.quarter_of_year(2016, 1, 31)
+```
+```elixir
+Calendar.ISO.quarter_of_year(2016, 4, 3)
+```
+```elixir
+Calendar.ISO.quarter_of_year(-99, 9, 31)
+```
+```elixir
+Calendar.ISO.quarter_of_year(2018, 12, 28)
+```
+
+## Function time_from_day_fraction/1
+
+Converts a day fraction to this Calendar's representation of time.
+
+## Examples
+
+```elixir
+Calendar.ISO.time_from_day_fraction({1, 2})
+```
+```elixir
+Calendar.ISO.time_from_day_fraction({13, 24})
+```
+
+## Function time_to_day_fraction/4
+
+Returns the normalized day fraction of the specified time.
+
+## Examples
+
+```elixir
+Calendar.ISO.time_to_day_fraction(0, 0, 0, {0, 6})
+```
+```elixir
+Calendar.ISO.time_to_day_fraction(12, 34, 56, {123, 6})
+```
+
+## Function time_to_string/5
+
+Converts the given time into a string.
+
+By default, returns times formatted in the "extended" format,
+for human readability. It also supports the "basic" format
+by passing the `:basic` option.
+
+## Examples
+
+```elixir
+Calendar.ISO.time_to_string(2, 2, 2, {2, 6})
+```
+```elixir
+Calendar.ISO.time_to_string(2, 2, 2, {2, 2})
+```
+```elixir
+Calendar.ISO.time_to_string(2, 2, 2, {2, 0})
+```
+```elixir
+Calendar.ISO.time_to_string(2, 2, 2, {2, 6}, :basic)
+```
+```elixir
+Calendar.ISO.time_to_string(2, 2, 2, {2, 6}, :extended)
+```
+
+## Function valid_date?/3
+
+Determines if the date given is valid according to the proleptic Gregorian calendar.
+
+## Examples
+
+```elixir
+Calendar.ISO.valid_date?(2015, 2, 28)
+```
+```elixir
+Calendar.ISO.valid_date?(2015, 2, 30)
+```
+```elixir
+Calendar.ISO.valid_date?(-1, 12, 31)
+```
+```elixir
+Calendar.ISO.valid_date?(-1, 12, 32)
+```
+
+## Function valid_time?/4
+
+Determines if the date given is valid according to the proleptic Gregorian calendar.
+
+Leap seconds are not supported by the built-in Calendar.ISO.
+
+## Examples
+
+```elixir
+Calendar.ISO.valid_time?(10, 50, 25, {3006, 6})
+```
+```elixir
+Calendar.ISO.valid_time?(23, 59, 60, {0, 0})
+```
+```elixir
+Calendar.ISO.valid_time?(24, 0, 0, {0, 0})
+```
+
+## Function year_of_era/1
+
+Calculates the year and era from the given `year`.
+
+The ISO calendar has two eras: the "current era" (CE) which
+starts in year `1` and is defined as era `1`. And "before the current
+era" (BCE) for those years less than `1`, defined as era `0`.
+
+## Examples
+
+```elixir
+Calendar.ISO.year_of_era(1)
+```
+```elixir
+Calendar.ISO.year_of_era(2018)
+```
+```elixir
+Calendar.ISO.year_of_era(0)
+```
+```elixir
+Calendar.ISO.year_of_era(-1)
+```
+
+## Function year_of_era/3
+
+Calendar callback to compute the year and era from the
+given `year`, `month` and `day`.
+
+In the ISO calendar, the new year coincides with the new era,
+so the `month` and `day` arguments are discarded. If you only
+have the year available, you can `year_of_era/1` instead.
+
+## Examples
+
+```elixir
+Calendar.ISO.year_of_era(1, 1, 1)
+```
+```elixir
+Calendar.ISO.year_of_era(2018, 12, 1)
+```
+```elixir
+Calendar.ISO.year_of_era(0, 1, 1)
+```
+```elixir
+Calendar.ISO.year_of_era(-1, 12, 1)
+```
+
+## Type bce
+
+"Before the Current Era" or "Before the Common Era" (BCE), for those years less than `1`.
+
+## Type ce
+
+The "Current Era" or the "Common Era" (CE) which starts in year `1`.
+
+## Type era
+
+The calendar era.
+
+The ISO calendar has two eras:
+* [CE](`t:ce/0`) - which starts in year `1` and is defined as era `1`.
+* [BCE](`t:bce/0`) - for those years less than `1` and is defined as era `0`.
+
+## Type microsecond
+
+Microseconds with stored precision.
+
+The precision represents the number of digits that must be used when
+representing the microseconds to external format. If the precision is 0,
+it means microseconds must be skipped.
+
+## Type day_of_week
+
+Integer that represents the day of the week, where 1 is Monday and 7 is Sunday.
+

@@ -1,0 +1,6 @@
+<!-- vim: syntax=markdown -->
+
+# MacroWithNoDoc
+
+A wild doc appeared!
+

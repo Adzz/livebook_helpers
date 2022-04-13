@@ -1,0 +1,19 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Dep.Converger
+
+## Function converge/4
+
+Converges all dependencies from the current project,
+including nested dependencies.
+
+There is a callback that is invoked for each dependency and
+must return an updated dependency in case some processing
+is done.
+
+See `Mix.Dep.Loader.children/1` for options.
+
+## Function topological_sort/1
+
+Topologically sorts the given dependencies.
+

@@ -1,0 +1,12 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Dep.Fetcher
+
+## Function all/3
+
+Fetches all dependencies.
+
+## Function by_name/4
+
+Fetches the dependencies with the given names and their children recursively.
+

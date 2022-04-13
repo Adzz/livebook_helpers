@@ -1,0 +1,11 @@
+<!-- vim: syntax=markdown -->
+
+# Version.Requirement
+
+A struct that holds version requirement information.
+
+The struct fields are private and should not be accessed.
+
+See the "Requirements" section in the `Version` module
+for more information.
+

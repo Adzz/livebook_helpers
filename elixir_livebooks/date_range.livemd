@@ -1,0 +1,17 @@
+<!-- vim: syntax=markdown -->
+
+# Date.Range
+
+## Section
+
+Returns an inclusive range between dates.
+
+Ranges must be created with the `Date.range/2` or `Date.range/3` function.
+
+The following fields are public:
+
+* `:first` - the initial date on the range
+* `:last` - the last date on the range
+* `:step` - (since v1.12.0) the step
+
+The remaining fields are private and should not be accessed.

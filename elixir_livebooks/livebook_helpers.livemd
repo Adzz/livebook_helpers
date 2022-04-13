@@ -4,7 +4,7 @@
 
 Documentation for `LivebookHelpers`.
 
-## livebook_from_module/2
+## Function livebook_from_module/2
 
 Takes a module and a path to a file, creates a livebook from the moduledocs in the given
 module. The `.livemd` extension is automatically added. Returns the file path for the
@@ -28,7 +28,7 @@ Below is a summary of what we do to create the Livebook:
 mix create_livebook_from_module LivebookHelpers "my_livebook"
 ```
 
-## livebook_from_module/3
+## Function livebook_from_module/3
 
 Takes a module and a path to a file, creates a livebook from the moduledocs in the given
 module. The `.livemd` extension is automatically added. The provided deps are put into a
@@ -53,7 +53,7 @@ Below is a summary of what we do to create the Livebook:
 mix create_livebook_from_module LivebookHelpers "my_livebook" "[livebook_helpers: ">= 0.0.0"]"
 ```
 
-## livebook_string/2
+## Function livebook_string/2
 
 Returns the text that can be used to create a livebook using the docs in the supplied
 module.

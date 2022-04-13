@@ -1,0 +1,38 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.Local.Rebar
+
+Fetches a copy of `rebar` or `rebar3` from the given path or URL.
+
+It defaults to safely download a Rebar copy from Hex's CDN.
+However, a URL can be given as an argument, usually for an existing
+local copy of Rebar:
+
+```elixir
+mix(local.rebar(rebar(path / to / rebar)))
+mix(local.rebar(rebar3(path / to / rebar)))
+```
+If neither `rebar` or `rebar3` are specified, both versions will be fetched.
+
+The local copy is stored in your `MIX_HOME` (defaults to `~/.mix`).
+This version of Rebar will be used as required by `mix deps.compile`.
+
+## Command line options
+
+  * `rebar PATH` - specifies a path for `rebar`
+
+  * `rebar3 PATH` - specifies a path for `rebar3`
+
+  * `--sha512` - checks the Rebar script matches the given SHA-512 checksum
+
+  * `--force` - forces installation without a shell prompt; primarily
+    intended for automation in build systems like `make`
+
+  * `--if-missing` - performs installation only if not installed yet;
+    intended to avoid repeatedly reinstalling in automation when a script
+    may be run multiple times
+
+## Mirrors
+If you want to change the [default mirror](https://repo.hex.pm)
+to use for fetching `rebar` please set the `HEX_MIRROR` environment variable.
+

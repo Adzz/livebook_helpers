@@ -1,0 +1,188 @@
+<!-- vim: syntax=markdown -->
+
+# Exception
+
+Functions to format throw/catch/exit and exceptions.
+
+Note that stacktraces in Elixir are only available inside
+catch and rescue by using the `__STACKTRACE__/0` variable.
+
+Do not rely on the particular format returned by the `format*`
+functions in this module. They may be changed in future releases
+in order to better suit Elixir's tool chain. In other words,
+by using the functions in this module it is guaranteed you will
+format exceptions as in the current Elixir version being used.
+
+## Function blame/3
+
+Attaches information to exceptions for extra debugging.
+
+This operation is potentially expensive, as it reads data
+from the file system, parses beam files, evaluates code and
+so on.
+
+If the exception module implements the optional `c:blame/2`
+callback, it will be invoked to perform the computation.
+
+## Function blame_mfa/3
+
+Blames the invocation of the given module, function and arguments.
+
+This function will retrieve the available clauses from bytecode
+and evaluate them against the given arguments. The clauses are
+returned as a list of `{args, guards}` pairs where each argument
+and each top-level condition in a guard separated by `and`/`or`
+is wrapped in a tuple with blame metadata.
+
+This function returns either `{:ok, definition, clauses}` or `:error`.
+Where `definition` is `:def`, `:defp`, `:defmacro` or `:defmacrop`.
+
+## Function exception?/1
+
+Returns `true` if the given `term` is an exception.
+
+## Function format/3
+
+Normalizes and formats throw/errors/exits and stacktraces.
+
+It relies on `format_banner/3` and `format_stacktrace/1`
+to generate the final format.
+
+If `kind` is `{:EXIT, pid}`, it does not generate a stacktrace,
+as such exits are retrieved as messages without stacktraces.
+
+## Function format_banner/3
+
+Normalizes and formats any throw/error/exit.
+
+The message is formatted and displayed in the same
+format as used by Elixir's CLI.
+
+The third argument is the stacktrace which is used to enrich
+a normalized error with more information. It is only used when
+the kind is an error.
+
+## Function format_exit/1
+
+Formats an exit. It returns a string.
+
+Often there are errors/exceptions inside exits. Exits are often
+wrapped by the caller and provide stacktraces too. This function
+formats exits in a way to nicely show the exit reason, caller
+and stacktrace.
+
+## Function format_fa/2
+
+Receives an anonymous function and arity and formats it as
+shown in stacktraces. The arity may also be a list of arguments.
+
+## Examples
+
+```elixir
+Exception.format_fa(fn -> nil end, 1)
+# => "#Function<...>/1"
+```
+## Function format_file_line/3
+
+Formats the given `file` and `line` as shown in stacktraces.
+
+If any of the values are `nil`, they are omitted.
+
+## Examples
+
+```elixir
+Exception.format_file_line("foo", 1)
+```
+```elixir
+Exception.format_file_line("foo", nil)
+```
+```elixir
+Exception.format_file_line(nil, nil)
+```
+
+## Function format_file_line_column/4
+
+Formats the given `file`, `line`, and `column` as shown in stacktraces.
+
+If any of the values are `nil`, they are omitted.
+
+## Examples
+
+```elixir
+Exception.format_file_line_column("foo", 1, 2)
+```
+```elixir
+Exception.format_file_line_column("foo", 1, nil)
+```
+```elixir
+Exception.format_file_line_column("foo", nil, nil)
+```
+```elixir
+Exception.format_file_line_column("foo", nil, 2)
+```
+```elixir
+Exception.format_file_line_column(nil, nil, nil)
+```
+
+## Function format_mfa/3
+
+Receives a module, fun and arity and formats it
+as shown in stacktraces. The arity may also be a list
+of arguments.
+
+## Examples
+
+```elixir
+Exception.format_mfa(Foo, :bar, 1)
+```
+```elixir
+Exception.format_mfa(Foo, :bar, [])
+```
+```elixir
+Exception.format_mfa(nil, :bar, [])
+```
+Anonymous functions are reported as -func/arity-anonfn-count-,
+where func is the name of the enclosing function. Convert to
+"anonymous fn in func/arity"
+
+## Function format_stacktrace/1
+
+Formats the stacktrace.
+
+A stacktrace must be given as an argument. If not, the stacktrace
+is retrieved from `Process.info/2`.
+
+## Function format_stacktrace_entry/1
+
+Receives a stacktrace entry and formats it into a string.
+
+## Function message/1
+
+Gets the message for an `exception`.
+
+## Function normalize/3
+
+Normalizes an exception, converting Erlang exceptions
+to Elixir exceptions.
+
+It takes the `kind` spilled by `catch` as an argument and
+normalizes only `:error`, returning the untouched payload
+for others.
+
+The third argument is the stacktrace which is used to enrich
+a normalized error with more information. It is only used when
+the kind is an error.
+
+## blame/2
+
+Called from `Exception.blame/3` to augment the exception struct.
+
+Can be used to collect additional information about the exception
+or do some additional expensive computation.
+
+## Type t
+
+The exception type
+## Type kind
+
+The kind handled by formatting functions

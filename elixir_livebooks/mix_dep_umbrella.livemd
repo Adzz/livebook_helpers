@@ -1,0 +1,16 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Dep.Umbrella
+
+## Function cached/0
+
+Gets all umbrella dependencies in the loaded format from cache (if available).
+
+## Function loaded/0
+
+Gets all umbrella dependencies in the loaded format.
+
+## Function unloaded/0
+
+Gets all umbrella dependencies in unloaded format.
+

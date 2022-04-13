@@ -1,0 +1,9 @@
+<!-- vim: syntax=markdown -->
+
+# Code.Normalizer
+
+## Function normalize/2
+
+Wraps literals in the quoted expression to conform to the AST format expected
+by the formatter.
+

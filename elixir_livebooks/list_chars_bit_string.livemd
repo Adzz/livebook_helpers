@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# List.Chars.BitString
+
+## Function to_charlist/1
+
+Returns the given binary `term` converted to a charlist.
+

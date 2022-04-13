@@ -1,0 +1,16 @@
+<!-- vim: syntax=markdown -->
+
+# Code.Formatter
+
+## Function local_without_parens?/3
+
+Checks if a function is a local without parens.
+
+## Function locals_without_parens/0
+
+Lists all default locals without parens.
+
+## Function to_algebra/2
+
+Converts the quoted expression into an algebra document.
+

@@ -161,10 +161,10 @@ defmodule LivebookHelpers do
         acc <> "## #{fn_name}/#{arity}\n\n" <> elixir_cells(doc)
 
       {{:type, type_name, _}, _line_number, _, %{"en" => type_doc}, _meta}, acc ->
-        acc <> "## #{type_name}\n\n" <> elixir_cells(type_doc)
+        acc <> "## Type #{type_name}\n\n" <> elixir_cells(type_doc)
 
       {{:macro, macro_name, arity}, _, _spec, %{"en" => doc}, _meta}, acc ->
-        acc <> "## #{macro_name}/#{arity}\n\n" <> elixir_cells(doc)
+        acc <> "## Macro #{macro_name}/#{arity}\n\n" <> elixir_cells(doc)
 
       # When there is no function doc we just skip it for now.
       {{:macro, _macro_name, _arity}, _, _spec, :none, _meta}, acc ->
@@ -180,7 +180,7 @@ defmodule LivebookHelpers do
         acc
 
       {{:function, function_name, arity}, _, _spec, %{"en" => doc}, _meta}, acc ->
-        acc <> "## #{function_name}/#{arity}\n\n" <> elixir_cells(doc)
+        acc <> "## Function #{function_name}/#{arity}\n\n" <> elixir_cells(doc)
 
       {{:function, _, _}, _, [_], map, _}, acc when map_size(map) == 0 ->
         acc

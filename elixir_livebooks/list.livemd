@@ -1,0 +1,821 @@
+<!-- vim: syntax=markdown -->
+
+# List
+
+Linked lists hold zero, one, or more elements in the chosen order.
+
+Lists in Elixir are specified between square brackets:
+
+```elixir
+[1, "two", 3, :four]
+```
+Two lists can be concatenated and subtracted using the
+`Kernel.++/2` and `Kernel.--/2` operators:
+
+```elixir
+[1, 2, 3] ++ [4, 5, 6]
+```
+```elixir
+[1, true, 2, false, 3, true] -- [true, false]
+```
+An element can be prepended to a list using `|`:
+
+```elixir
+new = 0
+list = [1, 2, 3]
+[new | list]
+```
+Lists in Elixir are effectively linked lists, which means
+they are internally represented in pairs containing the
+head and the tail of a list:
+
+```elixir
+[head | tail] = [1, 2, 3]
+head
+```
+```elixir
+tail
+```
+Similarly, we could write the list `[1, 2, 3]` using only
+such pairs (called cons cells):
+
+```elixir
+[1 | [2 | [3 | []]]]
+```
+Some lists, called improper lists, do not have an empty list as
+the second element in the last cons cell:
+
+```elixir
+[1 | [2 | [3 | 4]]]
+```
+Although improper lists are generally avoided, they are used in some
+special circumstances like iodata and chardata entities (see the `IO` module).
+
+Due to their cons cell based representation, prepending an element
+to a list is always fast (constant time), while appending becomes
+slower as the list grows in size (linear time):
+
+```elixir
+list = [1, 2, 3]
+# fast
+[0 | list]
+```
+```elixir
+# slow
+list ++ [4]
+```
+Most of the functions in this module work in linear time. This means that,
+that the time it takes to perform an operation grows at the same rate as the
+length of the list. For example `length/1` and `last/1` will run in linear
+time because they need to iterate through every element of the list, but
+`first/1` will run in constant time because it only needs the first element.
+
+Lists also implement the `Enumerable` protocol, so many functions to work with
+lists are found in the `Enum` module. Additionally, the following functions and
+operators for lists are found in `Kernel`:
+
+  * `++/2`
+  * `--/2`
+  * `hd/1`
+  * `tl/1`
+  * `in/2`
+  * `length/1`
+
+## Charlists
+If a list is made of non-negative integers, where each integer represents a
+Unicode code point, the list can also be called a charlist. These integers
+must:
+
+  * be within the range `0..0x10FFFF` (`0..1_114_111`);
+  * and be out of the range `0xD800..0xDFFF` (`55_296..57_343`), which is
+    reserved in Unicode for UTF-16 surrogate pairs.
+
+Elixir uses single quotes to define charlists:
+```elixir
+'héllo'
+```
+In particular, charlists will be printed back by default in single
+quotes if they contain only printable ASCII characters:
+
+```elixir
+'abc'
+```
+Even though the representation changed, the raw data does remain a list of
+numbers, which can be handled as such:
+
+```elixir
+inspect('abc', charlists: :as_list)
+```
+```elixir
+Enum.map('abc', fn num -> 1000 + num end)
+```
+You can use the `IEx.Helpers.i/1` helper to get a condensed rundown on
+charlists in IEx when you encounter them, which shows you the type, description
+and also the raw representation in one single summary.
+
+The rationale behind this behaviour is to better support
+Erlang libraries which may return text as charlists
+instead of Elixir strings. In Erlang, charlists are the default
+way of handling strings, while in Elixir it's binaries. One
+example of such functions is `Application.loaded_applications/0`:
+
+```elixir
+Application.loaded_applications()
+# =>  [
+# =>    {:stdlib, 'ERTS  CXC 138 10', '2.6'},
+# =>    {:compiler, 'ERTS  CXC 138 10', '6.0.1'},
+# =>    {:elixir, 'elixir', '1.0.0'},
+# =>    {:kernel, 'ERTS  CXC 138 10', '4.1'},
+# =>    {:logger, 'logger', '1.0.0'}
+# =>  ]
+```
+A list can be checked if it is made of only printable ASCII
+characters with `ascii_printable?/2`.
+
+Improper lists are never deemed as charlists.
+
+## Function ascii_printable?/2
+
+Checks if `list` is a charlist made only of printable ASCII characters.
+
+Takes an optional `limit` as a second argument. `ascii_printable?/2` only
+checks the printability of the list up to the `limit`.
+
+A printable charlist in Elixir contains only the printable characters in the
+standard seven-bit ASCII character encoding, which are characters ranging from
+32 to 126 in decimal notation, plus the following control characters:
+
+  * `?\a` - Bell
+  * `?\b` - Backspace
+  * `?\t` - Horizontal tab
+  * `?\n` - Line feed
+  * `?\v` - Vertical tab
+  * `?\f` - Form feed
+  * `?\r` - Carriage return
+  * `?\e` - Escape
+
+For more information read the [Character groups](https://en.wikipedia.org/wiki/ASCII#Character_groups)section in the Wikipedia article of the [ASCII](https://en.wikipedia.org/wiki/ASCII) standard.
+
+## Examples
+
+```elixir
+List.ascii_printable?('abc')
+```
+```elixir
+List.ascii_printable?('abc' ++ [0])
+```
+```elixir
+List.ascii_printable?('abc' ++ [0], 2)
+```
+Improper lists are not printable, even if made only of ASCII characters:
+
+```elixir
+List.ascii_printable?('abc' ++ ?d)
+```
+
+## Function delete/2
+
+Deletes the given `element` from the `list`. Returns a new list without
+the element.
+
+If the `element` occurs more than once in the `list`, just
+the first occurrence is removed.
+
+## Examples
+
+```elixir
+List.delete([:a, :b, :c], :a)
+```
+```elixir
+List.delete([:a, :b, :c], :d)
+```
+```elixir
+List.delete([:a, :b, :b, :c], :b)
+```
+```elixir
+List.delete([], :b)
+```
+
+## Function delete_at/2
+
+Produces a new list by removing the value at the specified `index`.
+
+Negative indices indicate an offset from the end of the `list`.
+If `index` is out of bounds, the original `list` is returned.
+
+## Examples
+
+```elixir
+List.delete_at([1, 2, 3], 0)
+```
+```elixir
+List.delete_at([1, 2, 3], 10)
+```
+```elixir
+List.delete_at([1, 2, 3], -1)
+```
+
+## Function duplicate/2
+
+Duplicates the given element `n` times in a list.
+
+`n` is an integer greater than or equal to `0`.
+
+If `n` is `0`, an empty list is returned.
+
+## Examples
+
+```elixir
+List.duplicate("hello", 0)
+```
+```elixir
+List.duplicate("hi", 1)
+```
+```elixir
+List.duplicate("bye", 2)
+```
+```elixir
+List.duplicate([1, 2], 3)
+```
+
+## Function first/2
+
+Returns the first element in `list` or `default` if `list` is empty.
+
+`first/2` has been introduced in Elixir v1.12.0, while `first/1` has been available since v1.0.0.
+
+## Examples
+
+```elixir
+List.first([])
+```
+```elixir
+List.first([], 1)
+```
+```elixir
+List.first([1])
+```
+```elixir
+List.first([1, 2, 3])
+```
+
+## Function flatten/1
+
+Flattens the given `list` of nested lists.
+
+Empty list elements are discarded.
+
+## Examples
+
+```elixir
+List.flatten([1, [[2], 3]])
+```
+```elixir
+List.flatten([[], [[], []]])
+```
+
+## Function flatten/2
+
+Flattens the given `list` of nested lists.
+The list `tail` will be added at the end of
+the flattened list.
+
+Empty list elements from `list` are discarded,
+but not the ones from `tail`.
+
+## Examples
+
+```elixir
+List.flatten([1, [[2], 3]], [4, 5])
+```
+```elixir
+List.flatten([1, [], 2], [3, [], 4])
+```
+
+## Function foldl/3
+
+Folds (reduces) the given list from the left with
+a function. Requires an accumulator, which can be any value.
+
+## Examples
+
+```elixir
+List.foldl([5, 5], 10, fn x, acc -> x + acc end)
+```
+```elixir
+List.foldl([1, 2, 3, 4], 0, fn x, acc -> x - acc end)
+```
+```elixir
+List.foldl([1, 2, 3], {0, 0}, fn x, {a1, a2} -> {a1 + x, a2 - x} end)
+```
+
+## Function foldr/3
+
+Folds (reduces) the given list from the right with
+a function. Requires an accumulator, which can be any value.
+
+## Examples
+
+```elixir
+List.foldr([1, 2, 3, 4], 0, fn x, acc -> x - acc end)
+```
+```elixir
+List.foldr([1, 2, 3, 4], %{sum: 0, product: 1}, fn x, %{sum: a1, product: a2} ->
+  %{sum: a1 + x, product: a2 * x}
+end)
+```
+
+## Function improper?/1
+
+Returns `true` if `list` is an improper list. Otherwise returns `false`.
+
+## Examples
+
+```elixir
+List.improper?([1, 2 | 3])
+```
+```elixir
+List.improper?([1, 2, 3])
+```
+
+## Function insert_at/3
+
+Returns a list with `value` inserted at the specified `index`.
+
+Note that `index` is capped at the list length. Negative indices
+indicate an offset from the end of the `list`.
+
+## Examples
+
+```elixir
+List.insert_at([1, 2, 3, 4], 2, 0)
+```
+```elixir
+List.insert_at([1, 2, 3], 10, 0)
+```
+```elixir
+List.insert_at([1, 2, 3], -1, 0)
+```
+```elixir
+List.insert_at([1, 2, 3], -10, 0)
+```
+
+## Function keydelete/3
+
+Receives a `list` of tuples and deletes the first tuple
+where the element at `position` matches the
+given `key`. Returns the new list.
+
+## Examples
+
+```elixir
+List.keydelete([a: 1, b: 2], :a, 0)
+```
+```elixir
+List.keydelete([a: 1, b: 2], 2, 1)
+```
+```elixir
+List.keydelete([a: 1, b: 2], :c, 0)
+```
+
+## Function keyfind/4
+
+Receives a list of tuples and returns the first tuple
+where the element at `position` in the tuple matches the
+given `key`.
+
+If no matching tuple is found, `default` is returned.
+
+## Examples
+
+```elixir
+List.keyfind([a: 1, b: 2], :a, 0)
+```
+```elixir
+List.keyfind([a: 1, b: 2], 2, 1)
+```
+```elixir
+List.keyfind([a: 1, b: 2], :c, 0)
+```
+
+## Function keyfind!/3
+
+Receives a list of tuples and returns the first tuple
+where the element at `position` in the tuple matches the
+given `key`.
+
+If no matching tuple is found, an error is raised.
+
+## Examples
+
+```elixir
+List.keyfind!([a: 1, b: 2], :a, 0)
+```
+```elixir
+List.keyfind!([a: 1, b: 2], 2, 1)
+```
+```elixir
+List.keyfind!([a: 1, b: 2], :c, 0)
+```
+
+## Function keymember?/3
+
+Receives a list of tuples and returns `true` if there is
+a tuple where the element at `position` in the tuple matches
+the given `key`.
+
+## Examples
+
+```elixir
+List.keymember?([a: 1, b: 2], :a, 0)
+```
+```elixir
+List.keymember?([a: 1, b: 2], 2, 1)
+```
+```elixir
+List.keymember?([a: 1, b: 2], :c, 0)
+```
+
+## Function keyreplace/4
+
+Receives a list of tuples and if the identified element by `key` at `position`
+exists, it is replaced with `new_tuple`.
+
+## Examples
+
+```elixir
+List.keyreplace([a: 1, b: 2], :a, 0, {:a, 3})
+```
+```elixir
+List.keyreplace([a: 1, b: 2], :a, 1, {:a, 3})
+```
+
+## Function keysort/2
+
+Receives a list of tuples and sorts the elements
+at `position` of the tuples. The sort is stable.
+
+## Examples
+
+```elixir
+List.keysort([a: 5, b: 1, c: 3], 1)
+```
+```elixir
+List.keysort([a: 5, c: 1, b: 3], 0)
+```
+
+## Function keystore/4
+
+Receives a `list` of tuples and replaces the element
+identified by `key` at `position` with `new_tuple`.
+
+If the element does not exist, it is added to the end of the `list`.
+
+## Examples
+
+```elixir
+List.keystore([a: 1, b: 2], :a, 0, {:a, 3})
+```
+```elixir
+List.keystore([a: 1, b: 2], :c, 0, {:c, 3})
+```
+
+## Function keytake/3
+
+Receives a `list` of tuples and returns the first tuple
+where the element at `position` in the tuple matches the
+given `key`, as well as the `list` without found tuple.
+
+If such a tuple is not found, `nil` will be returned.
+
+## Examples
+
+```elixir
+List.keytake([a: 1, b: 2], :a, 0)
+```
+```elixir
+List.keytake([a: 1, b: 2], 2, 1)
+```
+```elixir
+List.keytake([a: 1, b: 2], :c, 0)
+```
+
+## Function last/2
+
+Returns the last element in `list` or `default` if `list` is empty.
+
+`last/2` has been introduced in Elixir v1.12.0, while `last/1` has been available since v1.0.0.
+
+## Examples
+
+```elixir
+List.last([])
+```
+```elixir
+List.last([], 1)
+```
+```elixir
+List.last([1])
+```
+```elixir
+List.last([1, 2, 3])
+```
+
+## Function myers_difference/2
+
+Returns a keyword list that represents an *edit script*.
+
+The algorithm is outlined in the
+"An O(ND) Difference Algorithm and Its Variations" paper by E. Myers.
+
+An *edit script* is a keyword list. Each key describes the "editing action" to
+take in order to bring `list1` closer to being equal to `list2`; a key can be
+`:eq`, `:ins`, or `:del`. Each value is a sublist of either `list1` or `list2`
+that should be inserted (if the corresponding key `:ins`), deleted (if the
+corresponding key is `:del`), or left alone (if the corresponding key is
+`:eq`) in `list1` in order to be closer to `list2`.
+
+See `myers_difference/3` if you want to handle nesting in the diff scripts.
+
+## Examples
+
+```elixir
+List.myers_difference([1, 4, 2, 3], [1, 2, 3, 4])
+```
+
+## Function myers_difference/3
+
+Returns a keyword list that represents an *edit script* with nested diffs.
+
+This is an extension of `myers_difference/2` where a `diff_script` function
+can be given in case it is desired to compute nested differences. The function
+may return a list with the inner edit script or `nil` in case there is no
+such script. The returned inner edit script will be under the `:diff` key.
+
+## Examples
+
+```elixir
+List.myers_difference(["a", "db", "c"], ["a", "bc"], &String.myers_difference/2)
+```
+
+## Function pop_at/3
+
+Returns and removes the value at the specified `index` in the `list`.
+
+Negative indices indicate an offset from the end of the `list`.
+If `index` is out of bounds, the original `list` is returned.
+
+## Examples
+
+```elixir
+List.pop_at([1, 2, 3], 0)
+```
+```elixir
+List.pop_at([1, 2, 3], 5)
+```
+```elixir
+List.pop_at([1, 2, 3], 5, 10)
+```
+```elixir
+List.pop_at([1, 2, 3], -1)
+```
+
+## Function replace_at/3
+
+Returns a list with a replaced value at the specified `index`.
+
+Negative indices indicate an offset from the end of the `list`.
+If `index` is out of bounds, the original `list` is returned.
+
+## Examples
+
+```elixir
+List.replace_at([1, 2, 3], 0, 0)
+```
+```elixir
+List.replace_at([1, 2, 3], 10, 0)
+```
+```elixir
+List.replace_at([1, 2, 3], -1, 0)
+```
+```elixir
+List.replace_at([1, 2, 3], -10, 0)
+```
+
+## Function starts_with?/2
+
+Returns `true` if `list` starts with the given `prefix` list; otherwise returns `false`.
+
+If `prefix` is an empty list, it returns `true`.
+
+### Examples
+
+```elixir
+List.starts_with?([1, 2, 3], [1, 2])
+```
+```elixir
+List.starts_with?([1, 2], [1, 2, 3])
+```
+```elixir
+List.starts_with?([:alpha], [])
+```
+```elixir
+List.starts_with?([], [:alpha])
+```
+
+## Function to_atom/1
+
+Converts a charlist to an atom.
+
+Elixir supports conversions from charlists which contains any Unicode
+code point.
+
+Inlined by the compiler.
+
+## Examples
+
+```elixir
+List.to_atom('Elixir')
+```
+```elixir
+List.to_atom('🌢 Elixir')
+```
+
+## Function to_charlist/1
+
+Converts a list of integers representing Unicode code points, lists or
+strings into a charlist.
+
+Note that this function expects a list of integers representing
+Unicode code points. If you have a list of bytes, you must instead use
+the [`:binary` module](`:binary`).
+
+## Examples
+
+```elixir
+List.to_charlist([0x00E6, 0x00DF])
+```
+```elixir
+List.to_charlist([0x0061, "bc"])
+```
+```elixir
+List.to_charlist([0x0064, "ee", ['p']])
+```
+
+## Function to_existing_atom/1
+
+Converts a charlist to an existing atom. Raises an `ArgumentError`
+if the atom does not exist.
+
+Elixir supports conversions from charlists which contains any Unicode
+code point.
+
+Inlined by the compiler.
+
+## Examples
+
+```elixir
+_ = :my_atom
+List.to_existing_atom('my_atom')
+```
+```elixir
+_ = :"🌢 Elixir"
+List.to_existing_atom('🌢 Elixir')
+```
+
+## Function to_float/1
+
+Returns the float whose text representation is `charlist`.
+
+Inlined by the compiler.
+
+## Examples
+
+```elixir
+List.to_float('2.2017764e+0')
+```
+
+## Function to_integer/1
+
+Returns an integer whose text representation is `charlist`.
+
+Inlined by the compiler.
+
+## Examples
+
+```elixir
+List.to_integer('123')
+```
+
+## Function to_integer/2
+
+Returns an integer whose text representation is `charlist` in base `base`.
+
+Inlined by the compiler.
+
+The base needs to be between `2` and `36`.
+
+## Examples
+
+```elixir
+List.to_integer('3FF', 16)
+```
+
+## Function to_string/1
+
+Converts a list of integers representing code points, lists or
+strings into a string.
+
+To be converted to a string, a list must either be empty or only
+contain the following elements:
+
+  * strings
+  * integers representing Unicode code points
+  * a list containing one of these three elements
+
+Note that this function expects a list of integers representingUnicode code points. If you have a list of bytes, you must instead use
+the [`:binary` module](`:binary`).
+
+## Examples
+
+```elixir
+List.to_string([0x00E6, 0x00DF])
+```
+```elixir
+List.to_string([0x0061, "bc"])
+```
+```elixir
+List.to_string([0x0064, "ee", ['p']])
+```
+```elixir
+List.to_string([])
+```
+
+## Function to_tuple/1
+
+Converts a list to a tuple.
+
+Inlined by the compiler.
+
+## Examples
+
+```elixir
+List.to_tuple([:share, [:elixir, 163]])
+```
+
+## Function update_at/3
+
+Returns a list with an updated value at the specified `index`.
+
+Negative indices indicate an offset from the end of the `list`.
+If `index` is out of bounds, the original `list` is returned.
+
+## Examples
+
+```elixir
+List.update_at([1, 2, 3], 0, &(&1 + 10))
+```
+```elixir
+List.update_at([1, 2, 3], 10, &(&1 + 10))
+```
+```elixir
+List.update_at([1, 2, 3], -1, &(&1 + 10))
+```
+```elixir
+List.update_at([1, 2, 3], -10, &(&1 + 10))
+```
+
+## Function wrap/1
+
+Wraps `term` in a list if this is not list.
+
+If `term` is already a list, it returns the list.
+If `term` is `nil`, it returns an empty list.
+
+## Examples
+
+```elixir
+List.wrap("hello")
+```
+```elixir
+List.wrap([1, 2, 3])
+```
+```elixir
+List.wrap(nil)
+```
+
+## Function zip/1
+
+Zips corresponding elements from each list in `list_of_lists`.
+
+The zipping finishes as soon as any list terminates.
+
+## Examples
+
+```elixir
+List.zip([[1, 2], [3, 4], [5, 6]])
+```
+```elixir
+List.zip([[1, 2], [3], [5, 6]])
+```
+

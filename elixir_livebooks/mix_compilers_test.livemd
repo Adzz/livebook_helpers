@@ -1,0 +1,11 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Compilers.Test
+
+## Function require_and_run/3
+
+Requires and runs test files.
+
+It expects all of the test patterns, the test files that were matched for the
+test patterns, the test paths, and the opts from the test task.
+

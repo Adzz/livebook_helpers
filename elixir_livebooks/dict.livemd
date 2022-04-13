@@ -1,0 +1,12 @@
+<!-- vim: syntax=markdown -->
+
+# Dict
+
+Generic API for dictionaries.
+
+If you need a general dictionary, use the `Map` module.
+If you need to manipulate keyword lists, use `Keyword`.
+
+To convert maps into keywords and vice-versa, use the
+`new` function in the respective modules.
+

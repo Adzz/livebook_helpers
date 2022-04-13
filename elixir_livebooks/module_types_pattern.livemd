@@ -1,0 +1,18 @@
+<!-- vim: syntax=markdown -->
+
+# Module.Types.Pattern
+
+## Function of_guard/4
+
+Refines the type variables in the typing context using type check guards
+such as `is_integer/1`.
+
+## Function of_head/4
+
+Handles patterns and guards at once.
+
+## Function of_pattern/3
+
+Return the type and typing context of a pattern expression or an error
+in case of a typing conflict.
+

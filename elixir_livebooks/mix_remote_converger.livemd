@@ -1,0 +1,33 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.RemoteConverger
+
+## Function get/0
+
+Gets registered remote converger.
+
+## Function register/1
+
+Registers a remote converger.
+
+## converge/2
+
+Runs the remote converger.
+
+Return updated lock.
+
+## deps/2
+
+Returns child dependencies the converger has for the
+dependency. This list should filter the loaded children.
+
+## post_converge/0
+
+Called after all convergers have run so that the remote
+converger can perform cleanup.
+
+## remote?/1
+
+Returns `true` if given dependency is handled by
+remote converger.
+

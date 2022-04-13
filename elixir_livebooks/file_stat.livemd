@@ -1,0 +1,60 @@
+<!-- vim: syntax=markdown -->
+
+# File.Stat
+
+A struct that holds file information.
+
+In Erlang, this struct is represented by a `:file_info` record.
+Therefore this module also provides functions for converting
+between the Erlang record and the Elixir struct.
+
+Its fields are:
+
+  * `size` - size of file in bytes.
+
+  * `type` - `:device | :directory | :regular | :other | :symlink`; the type of the
+    file.
+
+  * `access` - `:read | :write | :read_write | :none`; the current system
+    access to the file.
+
+  * `atime` - the last time the file was read.
+
+  * `mtime` - the last time the file was written.
+
+  * `ctime` - the interpretation of this time field depends on the operating
+    system. On Unix-like operating systems, it is the last time the file or the inode was changed.
+    In Windows, it is the time of creation.
+
+  * `mode` - the file permissions.
+
+  * `links` - the number of links to this file. This is always 1 for file
+    systems which have no concept of links.
+
+  * `major_device` - identifies the file system where the file is located.
+    In Windows, the number indicates a drive as follows: 0 means A:, 1 means
+    B:, and so on.
+
+  * `minor_device` - only valid for character devices on Unix-like systems. In all other
+    cases, this field is zero.
+
+  * `inode` - gives the inode number. On non-Unix-like file systems, this field
+    will be zero.
+
+  * `uid` - indicates the owner of the file. Will be zero for non-Unix-like file
+    systems.
+
+  * `gid` - indicates the group that owns the file. Will be zero for
+    non-Unix-like file systems.
+
+The time type returned in `atime`, `mtime`, and `ctime` is dependent on thetime type set in options. `{:time, type}` where type can be `:local`,
+`:universal`, or `:posix`. Default is `:universal`.
+
+## Function from_record/1
+
+Converts a `:file_info` record into a `File.Stat`.
+
+## Function to_record/1
+
+Converts a `File.Stat` struct to a `:file_info` record.
+

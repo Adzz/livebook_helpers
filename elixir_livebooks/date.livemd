@@ -1,0 +1,673 @@
+<!-- vim: syntax=markdown -->
+
+# Date
+
+A Date struct and functions.
+
+The Date struct contains the fields year, month, day and calendar.
+New dates can be built with the `new/3` function or using the
+`~D` (see `Kernel.sigil_D/2`) sigil:
+
+```elixir
+~D[2000-01-01]
+```
+Both `new/3` and sigil return a struct where the date fields can
+be accessed directly:
+
+```elixir
+date = ~D[2000-01-01]
+date.year
+```
+```elixir
+date.month
+```
+The functions on this module work with the `Date` struct as well
+as any struct that contains the same fields as the `Date` struct,
+such as `NaiveDateTime` and `DateTime`. Such functions expect
+`t:Calendar.date/0` in their typespecs (instead of `t:t/0`).
+
+Developers should avoid creating the Date structs directly
+and instead rely on the functions provided by this module as well
+as the ones in third-party calendar libraries.
+
+## Comparing dates
+
+Comparisons in Elixir using `==/2`, `>/2`, `</2` and similar are structural
+and based on the `Date` struct fields. For proper comparison between
+dates, use the `compare/2` function.
+
+## Using epochs
+
+The `add/2` and `diff/2` functions can be used for computing dates
+or retrieving the number of days between instants. For example, if there
+is an interest in computing the number of days from the Unix epoch
+(1970-01-01):
+
+```elixir
+Date.diff(~D[2010-04-17], ~D[1970-01-01])
+```
+```elixir
+Date.add(~D[1970-01-01], 14716)
+```
+Those functions are optimized to deal with common epochs, such
+as the Unix Epoch above or the Gregorian Epoch (0000-01-01).
+
+## Function add/2
+
+Adds the number of days to the given `date`.
+
+The days are counted as Gregorian days. The date is returned in the same
+calendar as it was given in.
+
+## Examples
+
+```elixir
+Date.add(~D[2000-01-03], -2)
+```
+```elixir
+Date.add(~D[2000-01-01], 2)
+```
+```elixir
+Date.add(~N[2000-01-01 09:00:00], 2)
+```
+```elixir
+Date.add(~D[-0010-01-01], -2)
+```
+
+## Function beginning_of_month/1
+
+Calculates a date that is the first day of the month for the given `date`.
+
+## Examples
+
+```elixir
+Date.beginning_of_month(~D[2000-01-31])
+```
+```elixir
+Date.beginning_of_month(~D[2000-01-01])
+```
+```elixir
+Date.beginning_of_month(~N[2000-01-31 01:23:45])
+```
+
+## Function beginning_of_week/2
+
+Calculates a date that is the first day of the week for the given `date`.
+
+If the day is already the first day of the week, it returns the
+day itself. For the built-in ISO calendar, the week starts on Monday.
+A weekday rather than `:default` can be given as `starting_on`.
+
+## Examples
+
+```elixir
+Date.beginning_of_week(~D[2020-07-11])
+```
+```elixir
+Date.beginning_of_week(~D[2020-07-06])
+```
+```elixir
+Date.beginning_of_week(~D[2020-07-11], :sunday)
+```
+```elixir
+Date.beginning_of_week(~D[2020-07-11], :saturday)
+```
+```elixir
+Date.beginning_of_week(~N[2020-07-11 01:23:45])
+```
+
+## Function compare/2
+
+Compares two date structs.
+
+Returns `:gt` if first date is later than the second
+and `:lt` for vice versa. If the two dates are equal
+`:eq` is returned.
+
+## Examples
+
+```elixir
+Date.compare(~D[2016-04-16], ~D[2016-04-28])
+```
+This function can also be used to compare across more
+complex calendar types by considering only the date fields:
+
+```elixir
+Date.compare(~D[2016-04-16], ~N[2016-04-28 01:23:45])
+```
+```elixir
+Date.compare(~D[2016-04-16], ~N[2016-04-16 01:23:45])
+```
+```elixir
+Date.compare(~N[2016-04-16 12:34:56], ~N[2016-04-16 01:23:45])
+```
+
+## Function convert/2
+
+Converts the given `date` from its calendar to the given `calendar`.
+
+Returns `{:ok, date}` if the calendars are compatible,
+or `{:error, :incompatible_calendars}` if they are not.
+
+See also `Calendar.compatible_calendars?/2`.
+
+## Examples
+
+Imagine someone implements `Calendar.Holocene`, a calendar based on the
+Gregorian calendar that adds exactly 10,000 years to the current Gregorian
+year:
+
+```elixir
+Date.convert(~D[2000-01-01], Calendar.Holocene)
+```
+
+## Function convert!/2
+
+Similar to `Date.convert/2`, but raises an `ArgumentError`
+if the conversion between the two calendars is not possible.
+
+## Examples
+
+Imagine someone implements `Calendar.Holocene`, a calendar based on the
+Gregorian calendar that adds exactly 10,000 years to the current Gregorian
+year:
+
+```elixir
+Date.convert!(~D[2000-01-01], Calendar.Holocene)
+```
+
+## Function day_of_era/1
+
+Calculates the day-of-era and era for a given
+calendar `date`.
+
+Returns a tuple `{day, era}` representing the
+day within the era and the era number.
+
+## Examples
+
+```elixir
+Date.day_of_era(~D[0001-01-01])
+```
+```elixir
+Date.day_of_era(~D[0000-12-31])
+```
+
+## Function day_of_week/2
+
+Calculates the day of the week of a given `date`.
+
+Returns the day of the week as an integer. For the ISO 8601
+calendar (the default), it is an integer from 1 to 7, where
+1 is Monday and 7 is Sunday.
+
+An optional `starting_on` value may be supplied, which
+configures the weekday the week starts on. The default value
+for it is `:default`, which translates to `:monday` for the
+built-in ISO calendar. Any other weekday may be given to.
+
+## Examples
+
+```elixir
+Date.day_of_week(~D[2016-10-31])
+```
+```elixir
+Date.day_of_week(~D[2016-11-01])
+```
+```elixir
+Date.day_of_week(~N[2016-11-01 01:23:45])
+```
+```elixir
+Date.day_of_week(~D[-0015-10-30])
+```
+```elixir
+Date.day_of_week(~D[2016-10-31], :sunday)
+```
+```elixir
+Date.day_of_week(~D[2016-11-01], :sunday)
+```
+```elixir
+Date.day_of_week(~N[2016-11-01 01:23:45], :sunday)
+```
+```elixir
+Date.day_of_week(~D[-0015-10-30], :sunday)
+```
+
+## Function day_of_year/1
+
+Calculates the day of the year of a given `date`.
+
+Returns the day of the year as an integer. For the ISO 8601
+calendar (the default), it is an integer from 1 to 366.
+
+## Examples
+
+```elixir
+Date.day_of_year(~D[2016-01-01])
+```
+```elixir
+Date.day_of_year(~D[2016-11-01])
+```
+```elixir
+Date.day_of_year(~D[-0015-10-30])
+```
+```elixir
+Date.day_of_year(~D[2004-12-31])
+```
+
+## Function days_in_month/1
+
+Returns the number of days in the given `date` month.
+
+## Examples
+
+```elixir
+Date.days_in_month(~D[1900-01-13])
+```
+```elixir
+Date.days_in_month(~D[1900-02-09])
+```
+```elixir
+Date.days_in_month(~N[2000-02-20 01:23:45])
+```
+
+## Function diff/2
+
+Calculates the difference between two dates, in a full number of days.
+
+It returns the number of Gregorian days between the dates. Only `Date`
+structs that follow the same or compatible calendars can be compared
+this way. If two calendars are not compatible, it will raise.
+
+## Examples
+
+```elixir
+Date.diff(~D[2000-01-03], ~D[2000-01-01])
+```
+```elixir
+Date.diff(~D[2000-01-01], ~D[2000-01-03])
+```
+```elixir
+Date.diff(~D[0000-01-02], ~D[-0001-12-30])
+```
+```elixir
+Date.diff(~D[2000-01-01], ~N[2000-01-03 09:00:00])
+```
+
+## Function end_of_month/1
+
+Calculates a date that is the last day of the month for the given `date`.
+
+## Examples
+
+```elixir
+Date.end_of_month(~D[2000-01-01])
+```
+```elixir
+Date.end_of_month(~D[2000-01-31])
+```
+```elixir
+Date.end_of_month(~N[2000-01-01 01:23:45])
+```
+
+## Function end_of_week/2
+
+Calculates a date that is the last day of the week for the given `date`.
+
+If the day is already the last day of the week, it returns the
+day itself. For the built-in ISO calendar, the week ends on Sunday.
+A weekday rather than `:default` can be given as `starting_on`.
+
+## Examples
+
+```elixir
+Date.end_of_week(~D[2020-07-11])
+```
+```elixir
+Date.end_of_week(~D[2020-07-05])
+```
+```elixir
+Date.end_of_week(~D[2020-07-06], :sunday)
+```
+```elixir
+Date.end_of_week(~D[2020-07-06], :sunday)
+```
+```elixir
+Date.end_of_week(~D[2020-07-06], :saturday)
+```
+```elixir
+Date.end_of_week(~N[2020-07-11 01:23:45])
+```
+
+## Function from_erl/2
+
+Converts an Erlang date tuple to a `Date` struct.
+
+Only supports converting dates which are in the ISO calendar,
+or other calendars in which the days also start at midnight.
+Attempting to convert dates from other calendars will return an error tuple.
+
+## Examples
+
+```elixir
+Date.from_erl({2000, 1, 1})
+```
+```elixir
+Date.from_erl({2000, 13, 1})
+```
+
+## Function from_erl!/2
+
+Converts an Erlang date tuple but raises for invalid dates.
+
+## Examples
+
+```elixir
+Date.from_erl!({2000, 1, 1})
+```
+```elixir
+Date.from_erl!({2000, 13, 1})
+```
+
+## Function from_gregorian_days/2
+
+Converts a number of gregorian days to a `Date` struct.
+
+## Examples
+
+```elixir
+Date.from_gregorian_days(1)
+```
+```elixir
+Date.from_gregorian_days(730_485)
+```
+```elixir
+Date.from_gregorian_days(-1)
+```
+
+## Function from_iso8601/2
+
+Parses the extended "Dates" format described by
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+The year parsed by this function is limited to four digits.
+
+## Examples
+
+```elixir
+Date.from_iso8601("2015-01-23")
+```
+```elixir
+Date.from_iso8601("2015:01:23")
+```
+```elixir
+Date.from_iso8601("2015-01-32")
+```
+
+## Function from_iso8601!/2
+
+Parses the extended "Dates" format described by
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+Raises if the format is invalid.
+
+## Examples
+
+```elixir
+Date.from_iso8601!("2015-01-23")
+```
+```elixir
+Date.from_iso8601!("2015:01:23")
+```
+
+## Function leap_year?/1
+
+Returns `true` if the year in the given `date` is a leap year.
+
+## Examples
+
+```elixir
+Date.leap_year?(~D[2000-01-01])
+```
+```elixir
+Date.leap_year?(~D[2001-01-01])
+```
+```elixir
+Date.leap_year?(~D[2004-01-01])
+```
+```elixir
+Date.leap_year?(~D[1900-01-01])
+```
+```elixir
+Date.leap_year?(~N[2004-01-01 01:23:45])
+```
+
+## Function months_in_year/1
+
+Returns the number of months in the given `date` year.
+
+## Example
+
+```elixir
+Date.months_in_year(~D[1900-01-13])
+```
+
+## Function new/4
+
+Builds a new ISO date.
+
+Expects all values to be integers. Returns `{:ok, date}` if each
+entry fits its appropriate range, returns `{:error, reason}` otherwise.
+
+## Examples
+
+```elixir
+Date.new(2000, 1, 1)
+```
+```elixir
+Date.new(2000, 13, 1)
+```
+```elixir
+Date.new(2000, 2, 29)
+```
+```elixir
+Date.new(2000, 2, 30)
+```
+```elixir
+Date.new(2001, 2, 29)
+```
+
+## Function new!/4
+
+Builds a new ISO date.
+
+Expects all values to be integers. Returns `date` if each
+entry fits its appropriate range, raises if the date is invalid.
+
+## Examples
+
+```elixir
+Date.new!(2000, 1, 1)
+```
+```elixir
+Date.new!(2000, 13, 1)
+```
+```elixir
+Date.new!(2000, 2, 29)
+```
+## Function quarter_of_year/1
+
+Calculates the quarter of the year of a given `date`.
+
+Returns the day of the year as an integer. For the ISO 8601
+calendar (the default), it is an integer from 1 to 4.
+
+## Examples
+
+```elixir
+Date.quarter_of_year(~D[2016-10-31])
+```
+```elixir
+Date.quarter_of_year(~D[2016-01-01])
+```
+```elixir
+Date.quarter_of_year(~N[2016-04-01 01:23:45])
+```
+```elixir
+Date.quarter_of_year(~D[-0015-09-30])
+```
+
+## Function range/2
+
+Returns a range of dates.
+
+A range of dates represents a discrete number of dates where
+the first and last values are dates with matching calendars.
+
+Ranges of dates can be either increasing (`first <= last`) or
+decreasing (`first > last`). They are also always inclusive.
+
+## Examples
+
+```elixir
+Date.range(~D[1999-01-01], ~D[2000-01-01])
+```
+A range of dates implements the `Enumerable` protocol, which means
+functions in the `Enum` module can be used to work with
+ranges:
+
+```elixir
+range = Date.range(~D[2001-01-01], ~D[2002-01-01])
+Enum.count(range)
+```
+```elixir
+Enum.member?(range, ~D[2001-02-01])
+```
+```elixir
+Enum.take(range, 3)
+```
+
+## Function range/3
+
+Returns a range of dates with a step.
+
+## Examples
+
+```elixir
+range = Date.range(~D[2001-01-01], ~D[2002-01-01], 2)
+range
+```
+```elixir
+Enum.count(range)
+```
+```elixir
+Enum.member?(range, ~D[2001-01-03])
+```
+```elixir
+Enum.take(range, 3)
+```
+
+## Function to_erl/1
+
+Converts the given `date` to an Erlang date tuple.
+
+Only supports converting dates which are in the ISO calendar,
+or other calendars in which the days also start at midnight.
+Attempting to convert dates from other calendars will raise.
+
+## Examples
+
+```elixir
+Date.to_erl(~D[2000-01-01])
+```
+```elixir
+Date.to_erl(~N[2000-01-01 00:00:00])
+```
+
+## Function to_gregorian_days/1
+
+Converts a `date` struct to a number of gregorian days.
+
+## Examples
+
+```elixir
+Date.to_gregorian_days(~D[0000-01-02])
+```
+```elixir
+Date.to_gregorian_days(~D[2000-01-01])
+```
+```elixir
+Date.to_gregorian_days(~N[2000-01-01 00:00:00])
+```
+
+## Function to_iso8601/2
+
+Converts the given `date` to
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+By default, `Date.to_iso8601/2` returns dates formatted in the "extended"
+format, for human readability. It also supports the "basic" format through passing the `:basic` option.
+
+Only supports converting dates which are in the ISO calendar,
+or other calendars in which the days also start at midnight.
+Attempting to convert dates from other calendars will raise an `ArgumentError`.
+
+### Examples
+
+```elixir
+Date.to_iso8601(~D[2000-02-28])
+```
+```elixir
+Date.to_iso8601(~D[2000-02-28], :basic)
+```
+```elixir
+Date.to_iso8601(~N[2000-02-28 00:00:00])
+```
+
+## Function to_string/1
+
+Converts the given date to a string according to its calendar.
+
+### Examples
+
+```elixir
+Date.to_string(~D[2000-02-28])
+```
+```elixir
+Date.to_string(~N[2000-02-28 01:23:45])
+```
+```elixir
+Date.to_string(~D[-0100-12-15])
+```
+
+## Function utc_today/1
+
+Returns the current date in UTC.
+
+## Examples
+
+```elixir
+date = Date.utc_today()
+date.year >= 2016
+```
+
+## Function year_of_era/1
+
+Calculates the year-of-era and era for a given
+calendar year.
+
+Returns a tuple `{year, era}` representing the
+year within the era and the era number.
+
+## Examples
+
+```elixir
+Date.year_of_era(~D[0001-01-01])
+```
+```elixir
+Date.year_of_era(~D[0000-12-31])
+```
+```elixir
+Date.year_of_era(~D[-0001-01-01])
+```
+

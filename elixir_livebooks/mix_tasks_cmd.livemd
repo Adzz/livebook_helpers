@@ -1,0 +1,41 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.Cmd
+
+Executes the given command.
+
+Useful in umbrella applications to execute a command
+on each child app:
+
+```elixir
+mix(cmd(pwd))
+```
+You can limit which apps the cmd runs in by passing the app names
+before the cmd using --app:
+
+```elixir
+mix(cmd -- app(app1 -- app(app2(pwd))))
+```
+Aborts when a command exits with a non-zero status.
+
+This task is automatically reenabled, so it can be called multiple times
+with different arguments.
+
+## Command line options
+
+  * `--app` - limit running the command to the given app. This option
+    may be given multiple times
+
+  * `--cd` - (since v1.10.4) the directory to run the command in
+
+## Zombie operating system processes
+Beware that the Erlang VM does not terminate child processes
+when it shuts down. Therefore, if you use `mix cmd` to start
+long running processes and then shut down the VM, it is likely
+that those child processes won't be terminated with the VM.
+
+A solution is to make sure the child processes listen to the
+standard input and terminate when standard input is closed.
+We discuss this topic at length in the "Zombie operating system processes"
+of the `Port` module documentation.
+

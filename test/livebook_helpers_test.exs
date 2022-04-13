@@ -10,7 +10,7 @@ defmodule LivebookHelpersTest do
     test "bullet points" do
       s = LivebookHelpers.livebook_string(Bullets)
       assert s ==
-               "<!-- vim: syntax=markdown -->\n\n# Bullets\n\n## test_fun/0\n\nChunks the `enumerable` with fine grained control when every chunk is emitted.\n`chunk_fun` receives the current element and the accumulator and must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk and continue with the accumulator\n    line wraps are fine too.\n  * `{:cont, acc}` to not emit any chunk and continue with the accumulator\n    * nested bullet points are cool\n  * `{:halt, acc}` to halt chunking over the `enumerable`.\n    what about linew wraps AND\n    * nested bullet points??? a mad mad\n      wrapped nested bullet point. what a time.\n  * guess again\n\n`after_fun` is invoked with the final accumulator when iteration isfinished (or `halt`ed) to handle any trailing elements that were returned\nas part of an accumulator, but were not emitted as a chunk by `chunk_fun`.\nIt must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk. The chunk will be appended to the\n    list of already emitted chunks.\n  * `{:cont, acc}` to not emit a chunk\n\nThe `acc` in `after_fun` is required in order to mirror the tuple formatfrom `chunk_fun` but it will be discarded since the traversal is complete.\n\nReturns a list of emitted chunks.\n\n## Examples\n\n```elixir\nchunk_fun = fn element, acc ->\n  if rem(element, 2) == 0 do\n    {:cont, Enum.reverse([element | acc]), []}\n  else\n    {:cont, [element | acc]}\n  end\nend\n\nafter_fun = fn\n  [] -> {:cont, []}\n  acc -> {:cont, Enum.reverse(acc), []}\nend\n\nEnum.chunk_while(1..10, [], chunk_fun, after_fun)\n```\n```elixir\nEnum.chunk_while([1, 2, 3, 5, 7], [], chunk_fun, after_fun)\n```\n\n"
+               "<!-- vim: syntax=markdown -->\n\n# Bullets\n\n## Function test_fun/0\n\nChunks the `enumerable` with fine grained control when every chunk is emitted.\n`chunk_fun` receives the current element and the accumulator and must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk and continue with the accumulator\n    line wraps are fine too.\n  * `{:cont, acc}` to not emit any chunk and continue with the accumulator\n    * nested bullet points are cool\n  * `{:halt, acc}` to halt chunking over the `enumerable`.\n    what about linew wraps AND\n    * nested bullet points??? a mad mad\n      wrapped nested bullet point. what a time.\n  * guess again\n\n`after_fun` is invoked with the final accumulator when iteration isfinished (or `halt`ed) to handle any trailing elements that were returned\nas part of an accumulator, but were not emitted as a chunk by `chunk_fun`.\nIt must return:\n\n  * `{:cont, chunk, acc}` to emit a chunk. The chunk will be appended to the\n    list of already emitted chunks.\n  * `{:cont, acc}` to not emit a chunk\n\nThe `acc` in `after_fun` is required in order to mirror the tuple formatfrom `chunk_fun` but it will be discarded since the traversal is complete.\n\nReturns a list of emitted chunks.\n\n## Examples\n\n```elixir\nchunk_fun = fn element, acc ->\n  if rem(element, 2) == 0 do\n    {:cont, Enum.reverse([element | acc]), []}\n  else\n    {:cont, [element | acc]}\n  end\nend\n\nafter_fun = fn\n  [] -> {:cont, []}\n  acc -> {:cont, Enum.reverse(acc), []}\nend\n\nEnum.chunk_while(1..10, [], chunk_fun, after_fun)\n```\n```elixir\nEnum.chunk_while([1, 2, 3, 5, 7], [], chunk_fun, after_fun)\n```\n\n"
     end
 
     test "Multi line doctests" do
@@ -68,12 +68,12 @@ defmodule LivebookHelpersTest do
 
     test "macros fns work" do
       assert LivebookHelpers.livebook_string(MacroWithDoc) ==
-               "<!-- vim: syntax=markdown -->\n\n# MacroWithDoc\n\n## with_a_doc/0\n\nReturns 1 probably.\n\n```elixir\n1 + 1\n```\n"
+               "<!-- vim: syntax=markdown -->\n\n# MacroWithDoc\n\n## Macro with_a_doc/0\n\nReturns 1 probably.\n\n```elixir\n1 + 1\n```\n"
     end
 
     test "fns work" do
       assert LivebookHelpers.livebook_string(FnsForAll) ==
-               "<!-- vim: syntax=markdown -->\n\n# FnsForAll\n\n## one/0\n\nThis is a doc\n\n## two/0\n\nThere are many like it, but this one is mine.\n\n```xml\n<text>\n```\n\n```elixir\n\"some elixir code example\"\n```\n"
+               "<!-- vim: syntax=markdown -->\n\n# FnsForAll\n\n## Function one/0\n\nThis is a doc\n\n## Function two/0\n\nThere are many like it, but this one is mine.\n\n```xml\n<text>\n```\n\n```elixir\n\"some elixir code example\"\n```\n"
     end
 
     test "fns with no docs work" do
@@ -102,24 +102,24 @@ defmodule LivebookHelpersTest do
 
     test "typedocs" do
       assert LivebookHelpers.livebook_string(TypeDocs) ==
-               "<!-- vim: syntax=markdown -->\n\n# TypeDocs\n\n## fun_time/1\n\ndoc AND a spec?!\n\n## other_thing\n\nThis is a type\n## final\n\nThis is a type lower down the module, can it have elixir cells in it?\n\n```elixir\n1 + 1\n```\nThis probably wont test?\n\n```elixir\n\"example elixir though\"\n```\n"
+               "<!-- vim: syntax=markdown -->\n\n# TypeDocs\n\n## Function fun_time/1\n\ndoc AND a spec?!\n\n## Type other_thing\n\nThis is a type\n## Type final\n\nThis is a type lower down the module, can it have elixir cells in it?\n\n```elixir\n1 + 1\n```\nThis probably wont test?\n\n```elixir\n\"example elixir though\"\n```\n"
     end
 
     test "protocols" do
       assert LivebookHelpers.livebook_string(Proto) ==
-               "<!-- vim: syntax=markdown -->\n\n# Proto\n\nJust a normal mod doc I assume\n\n## thing/1\n\nAnything special here?\n\n"
+               "<!-- vim: syntax=markdown -->\n\n# Proto\n\nJust a normal mod doc I assume\n\n## Function thing/1\n\nAnything special here?\n\n"
     end
 
     test "protocol implementations" do
       assert LivebookHelpers.livebook_string(ImplementedProto) ==
-               "<!-- vim: syntax=markdown -->\n\n# ImplementedProto\n\nJust a normal mod doc I assume\n\n## thing/1\n\nAnything special here?\n\n"
+               "<!-- vim: syntax=markdown -->\n\n# ImplementedProto\n\nJust a normal mod doc I assume\n\n## Function thing/1\n\nAnything special here?\n\n"
 
       assert LivebookHelpers.livebook_string(Implementation) ==
                "<!-- vim: syntax=markdown -->\n\n# Implementation\n\nThis is the actual moduledoc\n\n"
 
       # RIGHT now if we get the actual module for the implementation then it works.
       assert LivebookHelpers.livebook_string(ImplementedProto.Implementation) ==
-               "<!-- vim: syntax=markdown -->\n\n# ImplementedProto.Implementation\n\nDoc for implementation.\nnot sure you should do this but it probably works.\n\n## thing/1\n\nthis is a doc\n"
+               "<!-- vim: syntax=markdown -->\n\n# ImplementedProto.Implementation\n\nDoc for implementation.\nnot sure you should do this but it probably works.\n\n## Function thing/1\n\nthis is a doc\n"
 
       # BUT the problem is if the implementation is in the module you don't want to have to
       # like manually find the module name for the implementation. It would be great to do

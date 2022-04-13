@@ -1,0 +1,24 @@
+<!-- vim: syntax=markdown -->
+
+# Logger.Utils
+
+## Function scan_inspect/4
+
+Receives a format string and arguments, scans them, and then replace `~p`,
+`~P`, `~w` and `~W` by its inspected variants.
+
+For information about format scanning and how to consume them,
+check `:io_lib.scan_format/2`
+
+## Function timestamp/2
+
+Returns a timestamp that includes milliseconds.
+
+## Function truncate/2
+
+Truncates a `chardata` into `n` bytes.
+
+There is a chance we truncate in the middle of a grapheme
+cluster but we never truncate in the middle of a binary
+code point. For this reason, truncation is not exact.
+

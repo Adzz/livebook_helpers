@@ -1,0 +1,500 @@
+<!-- vim: syntax=markdown -->
+
+# Access
+
+Key-based access to data structures.
+
+The `Access` module defines a behaviour for dynamically accessing
+keys of any type in a data structure via the `data[key]` syntax.
+
+`Access` supports keyword lists (`Keyword`) and maps (`Map`) out
+of the box. Keywords supports only atoms keys, keys for maps can
+be of any type. Both return `nil` if the key does not exist:
+
+```elixir
+keywords = [a: 1, b: 2]
+keywords[:a]
+```
+```elixir
+keywords[:c]
+```
+```elixir
+map = %{a: 1, b: 2}
+map[:a]
+```
+```elixir
+star_ratings = %{1.0 => "★", 1.5 => "★☆", 2.0 => "★★"}
+star_ratings[1.5]
+```
+This syntax is very convenient as it can be nested arbitrarily:
+
+```elixir
+keywords = [a: 1, b: 2]
+keywords[:c][:unknown]
+```
+This works because accessing anything on a `nil` value, returns
+`nil` itself:
+
+```elixir
+nil[:a]
+```
+The access syntax can also be used with the `Kernel.put_in/2`,
+`Kernel.update_in/2` and `Kernel.get_and_update_in/2` macros
+to allow values to be set in nested data structures:
+
+```elixir
+users = %{"john" => %{age: 27}, "meg" => %{age: 23}}
+put_in(users["john"][:age], 28)
+```
+> Attention! While the access syntax is allowed in maps via
+> `map[key]`, if your map is made of predefined atom keys,
+> you should prefer to access those atom keys with `map.key`
+> instead of `map[key]`, as `map.key` will raise if the key
+> is missing (which is not supposed to happen if the keys are
+> predefined). Similarly, since structs are maps and structs
+> have predefined keys, they only allow the `struct.key`
+> syntax and they do not allow the `struct[key]` access syntax.
+> See the `Map` module for more information.
+
+## Nested data structures
+
+Both key-based access syntaxes can be used with the nested update
+functions and macros in `Kernel`, such as `Kernel.get_in/2`,
+`Kernel.put_in/3`, `Kernel.update_in/3`, `Kernel.pop_in/2`, and
+`Kernel.get_and_update_in/3`.
+
+For example, to update a map inside another map:
+
+```elixir
+users = %{"john" => %{age: 27}, "meg" => %{age: 23}}
+put_in(users["john"].age, 28)
+```
+This module provides convenience functions for traversing other
+structures, like tuples and lists. These functions can be used
+in all the `Access`-related functions and macros in `Kernel`.
+
+For instance, given a user map with the `:name` and `:languages`
+keys, here is how to deeply traverse the map and convert all
+language names to uppercase:
+
+```elixir
+languages = [
+  %{name: "elixir", type: :functional},
+  %{name: "c", type: :procedural}
+]
+
+user = %{name: "john", languages: languages}
+update_in(user, [:languages, Access.all(), :name], &String.upcase/1)
+```
+See the functions `key/1`, `key!/1`, `elem/1`, and `all/0` for
+some of the available accessors.
+
+## Function all/0
+
+Returns a function that accesses all the elements in a list.
+
+The returned function is typically passed as an accessor to `Kernel.get_in/2`,
+`Kernel.get_and_update_in/3`, and friends.
+
+## Examples
+
+```elixir
+list = [%{name: "john"}, %{name: "mary"}]
+get_in(list, [Access.all(), :name])
+```
+```elixir
+get_and_update_in(list, [Access.all(), :name], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+```elixir
+pop_in(list, [Access.all(), :name])
+```
+Here is an example that traverses the list dropping even
+numbers and multiplying odd numbers by 2:
+
+```elixir
+require Integer
+
+get_and_update_in([1, 2, 3, 4, 5], [Access.all()], fn num ->
+  if Integer.is_even(num), do: :pop, else: {num, num * 2}
+end)
+```
+An error is raised if the accessed structure is not a list:
+
+```elixir
+get_in(%{}, [Access.all()])
+```
+
+## Function at/1
+
+Returns a function that accesses the element at `index` (zero based) of a list.
+
+The returned function is typically passed as an accessor to `Kernel.get_in/2`,
+`Kernel.get_and_update_in/3`, and friends.
+
+## Examples
+
+```elixir
+list = [%{name: "john"}, %{name: "mary"}]
+get_in(list, [Access.at(1), :name])
+```
+```elixir
+get_in(list, [Access.at(-1), :name])
+```
+```elixir
+get_and_update_in(list, [Access.at(0), :name], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+```elixir
+get_and_update_in(list, [Access.at(-1), :name], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+`at/1` can also be used to pop elements out of a list or
+a key inside of a list:
+
+```elixir
+list = [%{name: "john"}, %{name: "mary"}]
+pop_in(list, [Access.at(0)])
+```
+```elixir
+pop_in(list, [Access.at(0), :name])
+```
+When the index is out of bounds, `nil` is returned and the update function is never called:
+
+```elixir
+list = [%{name: "john"}, %{name: "mary"}]
+get_in(list, [Access.at(10), :name])
+```
+```elixir
+get_and_update_in(list, [Access.at(10), :name], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+An error is raised if the accessed structure is not a list:
+
+```elixir
+get_in(%{}, [Access.at(1)])
+```
+
+## Function at!/1
+
+Same as `at/1` except that it raises `Enum.OutOfBoundsError`
+if the given index is out of bounds.
+
+## Examples
+
+```elixir
+get_in([:a, :b, :c], [Access.at!(2)])
+```
+```elixir
+get_in([:a, :b, :c], [Access.at!(3)])
+```
+
+## Function elem/1
+
+Returns a function that accesses the element at the given index in a tuple.
+
+The returned function is typically passed as an accessor to `Kernel.get_in/2`,
+`Kernel.get_and_update_in/3`, and friends.
+
+The returned function raises if `index` is out of bounds.
+
+Note that popping elements out of tuples is not possible and raises an
+error.
+
+## Examples
+
+```elixir
+map = %{user: {"john", 27}}
+get_in(map, [:user, Access.elem(0)])
+```
+```elixir
+get_and_update_in(map, [:user, Access.elem(0)], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+```elixir
+pop_in(map, [:user, Access.elem(0)])
+```
+An error is raised if the accessed structure is not a tuple:
+
+```elixir
+get_in(%{}, [Access.elem(0)])
+```
+
+## Function fetch/2
+
+Fetches the value for the given key in a container (a map, keyword
+list, or struct that implements the `Access` behaviour).
+
+Returns `{:ok, value}` where `value` is the value under `key` if there is such
+a key, or `:error` if `key` is not found.
+
+## Examples
+
+```elixir
+Access.fetch(%{name: "meg", age: 26}, :name)
+```
+```elixir
+Access.fetch([ordered: true, on_timeout: :exit], :timeout)
+```
+
+## Function fetch!/2
+
+Same as `fetch/2` but returns the value directly,
+or raises a `KeyError` exception if `key` is not found.
+
+## Examples
+
+```elixir
+Access.fetch!(%{name: "meg", age: 26}, :name)
+```
+
+## Function filter/1
+
+Returns a function that accesses all elements of a list that match the provided predicate.
+
+The returned function is typically passed as an accessor to `Kernel.get_in/2`,
+`Kernel.get_and_update_in/3`, and friends.
+
+## Examples
+
+```elixir
+list = [%{name: "john", salary: 10}, %{name: "francine", salary: 30}]
+get_in(list, [Access.filter(&(&1.salary > 20)), :name])
+```
+```elixir
+get_and_update_in(list, [Access.filter(&(&1.salary <= 20)), :name], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+`filter/1` can also be used to pop elements out of a list or
+a key inside of a list:
+
+```elixir
+list = [%{name: "john", salary: 10}, %{name: "francine", salary: 30}]
+pop_in(list, [Access.filter(&(&1.salary >= 20))])
+```
+```elixir
+pop_in(list, [Access.filter(&(&1.salary >= 20)), :name])
+```
+When no match is found, an empty list is returned and the update function is never called
+
+```elixir
+list = [%{name: "john", salary: 10}, %{name: "francine", salary: 30}]
+get_in(list, [Access.filter(&(&1.salary >= 50)), :name])
+```
+```elixir
+get_and_update_in(list, [Access.filter(&(&1.salary >= 50)), :name], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+An error is raised if the predicate is not a function or is of the incorrect arity:
+
+```elixir
+get_in([], [Access.filter(5)])
+```
+An error is raised if the accessed structure is not a list:
+
+```elixir
+get_in(%{}, [Access.filter(fn a -> a == 10 end)])
+```
+
+## Function get/3
+
+Gets the value for the given key in a container (a map, keyword
+list, or struct that implements the `Access` behaviour).
+
+Returns the value under `key` if there is such a key, or `default` if `key` is
+not found.
+
+## Examples
+
+```elixir
+Access.get(%{name: "john"}, :name, "default name")
+```
+```elixir
+Access.get(%{name: "john"}, :age, 25)
+```
+```elixir
+Access.get([ordered: true], :timeout)
+```
+
+## Function get_and_update/3
+
+Gets and updates the given key in a `container` (a map, a keyword list,
+a struct that implements the `Access` behaviour).
+
+The `fun` argument receives the value of `key` (or `nil` if `key` is not
+present in `container`) and must return a two-element tuple `{current_value, new_value}`:
+the "get" value `current_value` (the retrieved value, which can be operated on before
+being returned) and the new value to be stored under `key` (`new_value`).
+`fun` may also return `:pop`, which means the current value
+should be removed from the container and returned.
+
+The returned value is a two-element tuple with the "get" value returned by
+`fun` and a new container with the updated value under `key`.
+
+## Examples
+
+```elixir
+Access.get_and_update([a: 1], :a, fn current_value ->
+  {current_value, current_value + 1}
+end)
+```
+
+## Function key/2
+
+Returns a function that accesses the given key in a map/struct.
+
+The returned function is typically passed as an accessor to `Kernel.get_in/2`,
+`Kernel.get_and_update_in/3`, and friends.
+
+The returned function uses the default value if the key does not exist.
+This can be used to specify defaults and safely traverse missing keys:
+
+```elixir
+get_in(%{}, [Access.key(:user, %{}), Access.key(:name, "meg")])
+```
+Such is also useful when using update functions, allowing us to introduce
+values as we traverse the data structure for updates:
+
+```elixir
+put_in(%{}, [Access.key(:user, %{}), Access.key(:name)], "Mary")
+```
+## Examples
+
+```elixir
+map = %{user: %{name: "john"}}
+get_in(map, [Access.key(:unknown, %{}), Access.key(:name, "john")])
+```
+```elixir
+get_and_update_in(map, [Access.key(:user), Access.key(:name)], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+```elixir
+pop_in(map, [Access.key(:user), Access.key(:name)])
+```
+An error is raised if the accessed structure is not a map or a struct:
+
+```elixir
+get_in([], [Access.key(:foo)])
+```
+
+## Function key!/1
+
+Returns a function that accesses the given key in a map/struct.
+
+The returned function is typically passed as an accessor to `Kernel.get_in/2`,
+`Kernel.get_and_update_in/3`, and friends.
+
+Similar to `key/2`, but the returned function raises if the key does not exist.
+
+## Examples
+
+```elixir
+map = %{user: %{name: "john"}}
+get_in(map, [Access.key!(:user), Access.key!(:name)])
+```
+```elixir
+get_and_update_in(map, [Access.key!(:user), Access.key!(:name)], fn prev ->
+  {prev, String.upcase(prev)}
+end)
+```
+```elixir
+pop_in(map, [Access.key!(:user), Access.key!(:name)])
+```
+```elixir
+get_in(map, [Access.key!(:user), Access.key!(:unknown)])
+```
+An error is raised if the accessed structure is not a map/struct:
+
+```elixir
+get_in([], [Access.key!(:foo)])
+```
+
+## Function pop/2
+
+Removes the entry with a given key from a container (a map, keyword
+list, or struct that implements the `Access` behaviour).
+
+Returns a tuple containing the value associated with the key and the
+updated container. `nil` is returned for the value if the key isn't
+in the container.
+
+## Examples
+
+With a map:
+
+```elixir
+Access.pop(%{name: "Elixir", creator: "Valim"}, :name)
+```
+A keyword list:
+
+```elixir
+Access.pop([name: "Elixir", creator: "Valim"], :name)
+```
+An unknown key:
+
+```elixir
+Access.pop(%{name: "Elixir", creator: "Valim"}, :year)
+```
+
+## fetch/2
+
+Invoked in order to access the value stored under `key` in the given term `term`.
+
+This function should return `{:ok, value}` where `value` is the value under
+`key` if the key exists in the term, or `:error` if the key does not exist in
+the term.
+
+Many of the functions defined in the `Access` module internally call this
+function. This function is also used when the square-brackets access syntax
+(`structure[key]`) is used: the `fetch/2` callback implemented by the module
+that defines the `structure` struct is invoked and if it returns `{:ok,
+value}` then `value` is returned, or if it returns `:error` then `nil` is
+returned.
+
+See the `Map.fetch/2` and `Keyword.fetch/2` implementations for examples of
+how to implement this callback.
+
+## get_and_update/3
+
+Invoked in order to access the value under `key` and update it at the same time.
+
+The implementation of this callback should invoke `fun` with the value under
+`key` in the passed structure `data`, or with `nil` if `key` is not present in it.
+This function must return either `{current_value, new_value}` or `:pop`.
+
+If the passed function returns `{current_value, new_value}`,
+the return value of this callback should be `{current_value, new_data}`, where:
+
+  * `current_value` is the retrieved value (which can be operated on before being returned)
+
+  * `new_value` is the new value to be stored under `key`
+
+  * `new_data` is `data` after updating the value of `key` with `new_value`.
+
+If the passed function returns `:pop`, the return value of this callbackmust be `{value, new_data}` where `value` is the value under `key`
+(or `nil` if not present) and `new_data` is `data` without `key`.
+
+See the implementations of `Map.get_and_update/3` or `Keyword.get_and_update/3`
+for more examples.
+
+## pop/2
+
+Invoked to "pop" the value under `key` out of the given data structure.
+
+When `key` exists in the given structure `data`, the implementation should
+return a `{value, new_data}` tuple where `value` is the value that was under
+`key` and `new_data` is `term` without `key`.
+
+When `key` is not present in the given structure, a tuple `{value, data}`
+should be returned, where `value` is implementation-defined.
+
+See the implementations for `Map.pop/3` or `Keyword.pop/3` for more examples.
+

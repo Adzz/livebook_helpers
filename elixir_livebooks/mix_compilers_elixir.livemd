@@ -1,0 +1,28 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Compilers.Elixir
+
+## Function clean/2
+
+Removes compiled files for the given `manifest`.
+
+## Function compile/7
+
+Compiles stale Elixir files.
+
+It expects a `manifest` file, the source directories, the destination
+directory, the cache key based on compiler configuration, external
+manifests, and external modules, followed by opts.
+
+The `manifest` is written down with information including dependencies
+between modules, which helps it recompile only the modules that
+have changed at runtime.
+
+## Function protocols_and_impls/2
+
+Returns protocols and implementations for the given `manifest`.
+
+## Function read_manifest/1
+
+Reads the manifest for external consumption.
+

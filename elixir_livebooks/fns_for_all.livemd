@@ -1,0 +1,19 @@
+<!-- vim: syntax=markdown -->
+
+# FnsForAll
+
+## Function one/0
+
+This is a doc
+
+## Function two/0
+
+There are many like it, but this one is mine.
+
+```xml
+<text>
+```
+
+```elixir
+"some elixir code example"
+```

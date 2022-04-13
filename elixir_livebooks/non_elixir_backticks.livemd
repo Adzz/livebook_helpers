@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# NonElixirBackticks
+
+```xml
+<Thing />
+```
+

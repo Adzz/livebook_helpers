@@ -1,0 +1,454 @@
+<!-- vim: syntax=markdown -->
+
+# Time
+
+A Time struct and functions.
+
+The Time struct contains the fields hour, minute, second and microseconds.
+New times can be built with the `new/4` function or using the
+`~T` (see `Kernel.sigil_T/2`) sigil:
+
+```elixir
+~T[23:00:07.001]
+```
+Both `new/4` and sigil return a struct where the time fields can
+be accessed directly:
+
+```elixir
+time = ~T[23:00:07.001]
+time.hour
+```
+```elixir
+time.microsecond
+```
+The functions on this module work with the `Time` struct as well
+as any struct that contains the same fields as the `Time` struct,
+such as `NaiveDateTime` and `DateTime`. Such functions expect
+`t:Calendar.time/0` in their typespecs (instead of `t:t/0`).
+
+Developers should avoid creating the Time structs directly
+and instead rely on the functions provided by this module as well
+as the ones in third-party calendar libraries.
+
+## Comparing times
+
+Comparisons in Elixir using `==/2`, `>/2`, `</2` and similar are structural
+and based on the `Time` struct fields. For proper comparison between
+times, use the `compare/2` function.
+
+## Function add/3
+
+Adds the `number` of `unit`s to the given `time`.
+
+This function accepts the `number` measured according to `Calendar.ISO`.
+The time is returned in the same calendar as it was given in.
+
+Note the result value represents the time of day, meaning that it is cyclic,
+for instance, it will never go over 24 hours for the ISO calendar.
+
+## Examples
+
+```elixir
+Time.add(~T[10:00:00], 27000)
+```
+```elixir
+Time.add(~T[11:00:00.005], 2400)
+```
+```elixir
+Time.add(~T[00:00:00], 86_399_999, :millisecond)
+```
+```elixir
+Time.add(~T[17:10:05], 86400)
+```
+```elixir
+Time.add(~T[23:00:00], -60)
+```
+
+## Function compare/2
+
+Compares two time structs.
+
+Returns `:gt` if first time is later than the second
+and `:lt` for vice versa. If the two times are equal
+`:eq` is returned.
+
+## Examples
+
+```elixir
+Time.compare(~T[16:04:16], ~T[16:04:28])
+```
+```elixir
+Time.compare(~T[16:04:16], ~T[16:04:16])
+```
+```elixir
+Time.compare(~T[16:04:16.01], ~T[16:04:16.001])
+```
+This function can also be used to compare across more
+complex calendar types by considering only the time fields:
+
+```elixir
+Time.compare(~N[1900-01-01 16:04:16], ~N[2015-01-01 16:04:16])
+```
+```elixir
+Time.compare(~N[2015-01-01 16:04:16], ~N[2015-01-01 16:04:28])
+```
+```elixir
+Time.compare(~N[2015-01-01 16:04:16.01], ~N[2000-01-01 16:04:16.001])
+```
+
+## Function convert/2
+
+Converts given `time` to a different calendar.
+
+Returns `{:ok, time}` if the conversion was successful,
+or `{:error, reason}` if it was not, for some reason.
+
+## Examples
+
+Imagine someone implements `Calendar.Holocene`, a calendar based on the
+Gregorian calendar that adds exactly 10,000 years to the current Gregorian
+year:
+
+```elixir
+Time.convert(~T[13:30:15], Calendar.Holocene)
+```
+
+## Function convert!/2
+
+Similar to `Time.convert/2`, but raises an `ArgumentError`
+if the conversion between the two calendars is not possible.
+
+## Examples
+
+Imagine someone implements `Calendar.Holocene`, a calendar based on the
+Gregorian calendar that adds exactly 10,000 years to the current Gregorian
+year:
+
+```elixir
+Time.convert!(~T[13:30:15], Calendar.Holocene)
+```
+
+## Function diff/3
+
+Returns the difference between two times, considering only the hour, minute,
+second and microsecond.
+
+As with the `compare/2` function both `Time` structs and other structures
+containing time can be used. If for instance a `NaiveDateTime` or `DateTime`
+is passed, only the hour, minute, second, and microsecond is considered. Any
+additional information about a date or time zone is ignored when calculating
+the difference.
+
+The answer can be returned in any `unit` available from
+`t:System.time_unit/0`. If the first time value is earlier than
+the second, a negative number is returned.
+
+This function returns the difference in seconds where seconds
+are measured according to `Calendar.ISO`.
+
+## Examples
+
+```elixir
+Time.diff(~T[00:29:12], ~T[00:29:10])
+```
+```elixir
+# When passing a `NaiveDateTime` the date part is ignored.
+```
+
+```elixir
+Time.diff(~N[2017-01-01 00:29:12], ~T[00:29:10])
+```
+```elixir
+# Two `NaiveDateTime` structs could have big differences in the date
+# but only the time part is considered.
+```
+
+```elixir
+Time.diff(~N[2017-01-01 00:29:12], ~N[1900-02-03 00:29:10])
+```
+```elixir
+Time.diff(~T[00:29:12], ~T[00:29:10], :microsecond)
+```
+```elixir
+Time.diff(~T[00:29:10], ~T[00:29:12], :microsecond)
+```
+
+## Function from_erl/3
+
+Converts an Erlang time tuple to a `Time` struct.
+
+## Examples
+
+```elixir
+Time.from_erl({23, 30, 15}, {5000, 3})
+```
+```elixir
+Time.from_erl({24, 30, 15})
+```
+
+## Function from_erl!/3
+
+Converts an Erlang time tuple to a `Time` struct.
+
+## Examples
+
+```elixir
+Time.from_erl!({23, 30, 15})
+```
+```elixir
+Time.from_erl!({23, 30, 15}, {5000, 3})
+```
+```elixir
+Time.from_erl!({24, 30, 15})
+```
+
+## Function from_iso8601/2
+
+Parses the extended "Local time" format described by
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+Time zone offset may be included in the string but they will be
+simply discarded as such information is not included in times.
+
+As specified in the standard, the separator "T" may be omitted if
+desired as there is no ambiguity within this function.
+
+## Examples
+
+```elixir
+Time.from_iso8601("23:50:07")
+```
+```elixir
+Time.from_iso8601("23:50:07Z")
+```
+```elixir
+Time.from_iso8601("T23:50:07Z")
+```
+```elixir
+Time.from_iso8601("23:50:07,0123456")
+```
+```elixir
+Time.from_iso8601("23:50:07.0123456")
+```
+```elixir
+Time.from_iso8601("23:50:07.123Z")
+```
+```elixir
+Time.from_iso8601("2015:01:23 23-50-07")
+```
+```elixir
+Time.from_iso8601("23:50:07A")
+```
+```elixir
+Time.from_iso8601("23:50:07.")
+```
+```elixir
+Time.from_iso8601("23:50:61")
+```
+
+## Function from_iso8601!/2
+
+Parses the extended "Local time" format described by
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+Raises if the format is invalid.
+
+## Examples
+
+```elixir
+Time.from_iso8601!("23:50:07,123Z")
+```
+```elixir
+Time.from_iso8601!("23:50:07.123Z")
+```
+```elixir
+Time.from_iso8601!("2015:01:23 23-50-07")
+```
+
+## Function from_seconds_after_midnight/3
+
+Converts a number of seconds after midnight to a `Time` struct.
+
+## Examples
+
+```elixir
+Time.from_seconds_after_midnight(10_000)
+```
+```elixir
+Time.from_seconds_after_midnight(30_000, {5000, 3})
+```
+```elixir
+Time.from_seconds_after_midnight(-1)
+```
+```elixir
+Time.from_seconds_after_midnight(100_000)
+```
+
+## Function new/5
+
+Builds a new time.
+
+Expects all values to be integers. Returns `{:ok, time}` if each
+entry fits its appropriate range, returns `{:error, reason}` otherwise.
+
+Microseconds can also be given with a precision, which must be an
+integer between 0 and 6.
+
+The built-in calendar does not support leap seconds.
+
+## Examples
+
+```elixir
+Time.new(0, 0, 0, 0)
+```
+```elixir
+Time.new(23, 59, 59, 999_999)
+```
+```elixir
+Time.new(24, 59, 59, 999_999)
+```
+```elixir
+Time.new(23, 60, 59, 999_999)
+```
+```elixir
+Time.new(23, 59, 60, 999_999)
+```
+```elixir
+Time.new(23, 59, 59, 1_000_000)
+```
+```elixir
+# Invalid precision
+Time.new(23, 59, 59, {999_999, 10})
+{:error, :invalid_time}
+```
+## Function new!/5
+
+Builds a new time.
+
+Expects all values to be integers. Returns `time` if each
+entry fits its appropriate range, raises if the time is invalid.
+
+Microseconds can also be given with a precision, which must be an
+integer between 0 and 6.
+
+The built-in calendar does not support leap seconds.
+
+## Examples
+
+```elixir
+Time.new!(0, 0, 0, 0)
+```
+```elixir
+Time.new!(23, 59, 59, 999_999)
+```
+```elixir
+Time.new!(24, 59, 59, 999_999)
+```
+## Function to_erl/1
+
+Converts given `time` to an Erlang time tuple.
+
+WARNING: Loss of precision may occur, as Erlang time tuples
+only contain hours/minutes/seconds.
+
+## Examples
+
+```elixir
+Time.to_erl(~T[23:30:15.999])
+```
+```elixir
+Time.to_erl(~N[2010-04-17 23:30:15.999])
+```
+
+## Function to_iso8601/2
+
+Converts the given time to
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+By default, `Time.to_iso8601/2` returns times formatted in the "extended"
+format, for human readability. It also supports the "basic" format through
+passing the `:basic` option.
+
+### Examples
+
+```elixir
+Time.to_iso8601(~T[23:00:13])
+```
+```elixir
+Time.to_iso8601(~T[23:00:13.001])
+```
+```elixir
+Time.to_iso8601(~T[23:00:13.001], :basic)
+```
+```elixir
+Time.to_iso8601(~N[2010-04-17 23:00:13])
+```
+
+## Function to_seconds_after_midnight/1
+
+Converts a `Time` struct to a number of seconds after midnight.
+
+The returned value is a two-element tuple with the number of seconds and microseconds.
+
+## Examples
+
+```elixir
+Time.to_seconds_after_midnight(~T[23:30:15])
+```
+```elixir
+Time.to_seconds_after_midnight(~N[2010-04-17 23:30:15.999])
+```
+
+## Function to_string/1
+
+Converts the given `time` to a string.
+
+### Examples
+
+```elixir
+Time.to_string(~T[23:00:00])
+```
+```elixir
+Time.to_string(~T[23:00:00.001])
+```
+```elixir
+Time.to_string(~T[23:00:00.123456])
+```
+```elixir
+Time.to_string(~N[2015-01-01 23:00:00.001])
+```
+```elixir
+Time.to_string(~N[2015-01-01 23:00:00.123456])
+```
+
+## Function truncate/2
+
+Returns the given time with the microsecond field truncated to the given
+precision (`:microsecond`, `millisecond` or `:second`).
+
+The given time is returned unchanged if it already has lower precision than
+the given precision.
+
+## Examples
+
+```elixir
+Time.truncate(~T[01:01:01.123456], :microsecond)
+```
+```elixir
+Time.truncate(~T[01:01:01.123456], :millisecond)
+```
+```elixir
+Time.truncate(~T[01:01:01.123456], :second)
+```
+
+## Function utc_now/1
+
+Returns the current time in UTC.
+
+## Examples
+
+```elixir
+time = Time.utc_now()
+time.hour >= 0
+```
+

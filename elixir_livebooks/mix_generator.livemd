@@ -1,0 +1,128 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Generator
+
+Conveniences for working with paths and generating content.
+
+## Function copy_file/3
+
+Copies `source` to `target`.
+
+If `target` already exists and the contents are not the same,
+it asks for user confirmation.
+
+## Options
+
+  * `:force` - forces copying without a shell prompt
+  * `:quiet` - does not log command output
+
+## Examples
+```elixir
+Mix.Generator.copy_file("source/gitignore", ".gitignore")
+```
+
+## Function copy_template/4
+
+Evaluates and copy templates at `source` to `target`.
+
+The template in `source` is evaluated with the given `assigns`.
+
+If `target` already exists and the contents are not the same,
+it asks for user confirmation.
+
+## Options
+
+  * `:force` - forces copying without a shell prompt
+  * `:quiet` - does not log command output
+
+## Examples
+```elixir
+assigns = [project_path: "/Users/joe/newproject"]
+Mix.Generator.copy_template("source/gitignore", ".gitignore", assigns)
+```
+
+## Function create_directory/2
+
+Creates a directory if one does not exist yet.
+
+This function does nothing if the given directory already exists; in this
+case, it still logs the directory creation.
+
+## Options
+
+  * `:quiet` - does not log command output
+
+## Examples
+```elixir
+Mix.Generator.create_directory("path/to/dir")
+```
+
+## Function create_file/3
+
+Creates a file with the given contents.
+
+If the file already exists and the contents are not the same,
+it asks for user confirmation.
+
+## Options
+
+  * `:force` - forces creation without a shell prompt
+  * `:quiet` - does not log command output
+
+## Examples
+```elixir
+Mix.Generator.create_file(".gitignore", "_build\ndeps\n")
+```
+
+## Function overwrite?/1
+
+Prompts the user to overwrite the file if it exists.
+
+Returns false if the file exists and the user forbade
+to override it. Returns true otherwise.
+
+## Function overwrite?/2
+
+Prompts the user to overwrite the file if it exists.
+
+The contents are compared to avoid asking the user to
+override if the contents did not change. Returns false
+if the file exists and the content is the same or the
+user forbade to override it. Returns true otherwise.
+
+## Macro embed_template/2
+
+Embeds a template given by `contents` into the current module.
+
+It will define a private function with the `name` followed by
+`_template` that expects assigns as arguments.
+
+This function must be invoked passing a keyword list.
+Each key in the keyword list can be accessed in the
+template using the `@` macro.
+
+For more information, check `EEx.SmartEngine`.
+
+## Examples
+
+```elixir
+defmodule Mix.Tasks.MyTask do
+  require Mix.Generator
+  Mix.Generator.embed_template(:log, "Log: <%= @log %>")
+end
+```
+## Macro embed_text/2
+
+Embeds a text given by `contents` into the current module.
+
+It will define a private function with the `name` followed by
+`_text` that expects no arguments.
+
+## Examples
+
+```elixir
+defmodule Mix.Tasks.MyTask do
+  require Mix.Generator
+  Mix.Generator.embed_text(:error, "There was an error!")
+end
+```

@@ -1,0 +1,27 @@
+<!-- vim: syntax=markdown -->
+
+# Module.Types.Of
+
+## Function binary/4
+
+Handles binaries.
+
+In the stack, we add nodes such as <<expr>>, <<..., expr>>, etc,
+based on the position of the expression within the binary.
+
+## Function closed_map/4
+
+Handles closed maps (without dynamic => dynamic).
+
+## Function open_map/4
+
+Handles open maps (with dynamic => dynamic).
+
+## Function remote/5
+
+Handles remote calls.
+
+## Function struct/3
+
+Handles structs.
+

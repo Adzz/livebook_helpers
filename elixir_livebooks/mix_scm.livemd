@@ -1,0 +1,126 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.SCM
+
+This module provides helper functions and defines the
+behaviour required by any source code manager (SCM) used by Mix.
+
+## Function append/1
+
+Appends the given SCM module to the list of available SCMs.
+
+## Function available/0
+
+Returns all available SCMs. Each SCM is tried in order
+until a matching one is found.
+
+## Function prepend/1
+
+Prepends the given SCM module to the list of available SCMs.
+
+## accepts_options/2
+
+This behaviour function receives a keyword list of `opts`
+and should return an updated list in case the SCM consumes
+the available options. For example, when a developer specifies
+a dependency:
+
+```elixir
+{:foo, "0.1.0", github: "foo/bar"}
+```
+Each registered SCM will be asked if they consume this dependency,
+receiving `[github: "foo/bar"]` as argument. Since this option makes
+sense for the Git SCM, it will return an update list of options
+while other SCMs would simply return `nil`.
+
+## checked_out?/1
+
+This behaviour function returns a boolean if the
+dependency is available.
+
+## checkout/1
+
+This behaviour function checks out dependencies.
+
+If the dependency is locked, a lock is received in `opts`
+and the repository must be check out at the lock. Otherwise,
+no lock is given and the repository can be checked out
+to the latest version.
+
+It must return the current lock.
+
+## equal?/2
+
+Receives two options and must return `true` if they refer to the
+same repository. The options are guaranteed to belong to the
+same SCM.
+
+## fetchable?/0
+
+Returns a boolean if the dependency can be fetched
+or it is meant to be previously available in the
+file system.
+
+Local dependencies (i.e. non-fetchable ones) are automatically
+recompiled every time the parent project is compiled.
+
+## format/1
+
+Returns a string representing the SCM. This is used
+when printing the dependency and not for inspection,
+so the amount of information should be concise and
+easy to spot.
+
+## format_lock/1
+
+Returns a string representing the SCM. This is used
+when printing the dependency and not for inspection,
+so the amount of information should be concise and
+easy to spot.
+
+If nil is returned, it means no lock information is available.
+
+## lock_status/1
+
+This behaviour function checks the status of the lock. In
+particular, it checks if the revision stored in the lock
+is the same as the repository it is currently in.
+
+It may return:
+
+  * `:mismatch` - if the lock doesn't match and we need to
+    simply move to the latest lock
+
+  * `:outdated` - the repository options are outdated in the
+    lock and we need to trigger a full update
+
+  * `:ok` - everything is fine
+
+The lock is sent via `opts[:lock]` but it may not always beavailable. In such cases, if the SCM requires a lock, it must
+return `:mismatch`, otherwise simply `:ok`.
+
+Note the lock may also belong to another SCM and as such, an
+structural check is required. A structural mismatch should always
+return `:outdated`.
+
+## managers/1
+
+Returns the usable managers for the dependency. This can be used
+if the SCM has extra knowledge of the dependency, otherwise it
+should return an empty list.
+
+## update/1
+
+This behaviour function updates dependencies. It may be
+called by `deps.get` or `deps.update`.
+
+In the first scenario, a lock is received in `opts` and
+the repository must be updated to the lock. In the second,
+no lock is given and the repository can be updated freely.
+
+It must return the current lock.
+
+## Type t
+
+A module implementing the `Mix.SCM` behaviour.
+

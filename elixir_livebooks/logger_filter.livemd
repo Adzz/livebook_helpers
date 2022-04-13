@@ -1,0 +1,16 @@
+<!-- vim: syntax=markdown -->
+
+# Logger.Filter
+
+## Function filter_elixir_domain/2
+
+Filter messages logged via `Logger` module when not logging OTP reports.
+
+## Function process_disabled/2
+
+Filter out logs if current process opted out of log reports.
+
+## Function silence_logger_exit/2
+
+A filter that waits until Logger exits and then removes itself.
+

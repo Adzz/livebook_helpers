@@ -1,0 +1,34 @@
+<!-- vim: syntax=markdown -->
+
+# Logger.Translator
+
+Default translation for Erlang log messages.
+
+Logger allows developers to rewrite log messages provided by
+OTP applications into a format more compatible with Elixir
+log messages by providing a translator.
+
+A translator is simply a tuple containing a module and a function
+that can be added and removed via the `Logger.add_translator/1` and
+`Logger.remove_translator/1` functions and is invoked for every Erlang
+message above the minimum log level with four arguments:
+
+  * `min_level` - the current Logger level
+  * `level` - the level of the message being translated
+  * `kind` - if the message is a `:report` or `:format`
+  * `message` - the message to format. If it is `:report`, it is a tuple
+    with `{report_type, report_data}`, if it is `:format`, it is a
+    tuple with `{format_message, format_args}`.
+
+The function must return:
+  * `{:ok, chardata, metadata}` - if the message translation with its metadata
+  * `{:ok, chardata}` - the translated message
+  * `:skip` - if the message is not meant to be translated nor logged
+  * `:none` - if there is no translation, which triggers the next translator
+
+See the function `translate/4` in this module for an example implementationand the default messages translated by Logger.
+
+## Function translate/4
+
+Built-in translation function.
+

@@ -1,0 +1,24 @@
+<!-- vim: syntax=markdown -->
+
+# String.Chars
+
+The `String.Chars` protocol is responsible for
+converting a structure to a binary (only if applicable).
+
+The only function required to be implemented is
+`to_string/1`, which does the conversion.
+
+The `to_string/1` function automatically imported
+by `Kernel` invokes this protocol. String
+interpolation also invokes `to_string/1` in its
+arguments. For example, `"foo#{bar}"` is the same
+as `"foo" <> to_string(bar)`.
+
+## Function to_string/1
+
+Converts `term` to a string.
+
+## to_string/1
+
+Converts `term` to a string.
+

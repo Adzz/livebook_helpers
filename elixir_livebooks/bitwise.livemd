@@ -1,0 +1,251 @@
+<!-- vim: syntax=markdown -->
+
+# Bitwise
+
+## Section
+
+A set of functions that perform calculations on bits.
+
+All bitwise functions work only on integers; otherwise an
+`ArithmeticError` is raised.
+
+The functions in this module come in two flavors: named or
+operators. For example:
+
+```elixir
+use Bitwise
+# named
+bnot(1)
+```
+
+```elixir
+# operator
+1 &&& 1
+```
+
+If you prefer to use only operators or skip them, you can
+pass the following options:
+
+* `:only_operators` - includes only operators
+* `:skip_operators` - skips operators
+
+For example:
+
+```elixir
+use Bitwise, only_operators: true
+1 &&& 1
+```
+
+When invoked with no options, `use Bitwise` is equivalent
+to `import Bitwise`.
+
+All bitwise functions can be used in guards:
+
+```elixir
+odd? = fn
+  int when Bitwise.band(int, 1) == 1 -> true
+  _ -> false
+end
+
+odd?.(1)
+```
+
+All functions in this module are inlined by the compiler.
+
+## Function &&&/2
+
+Bitwise AND operator.
+
+Calculates the bitwise AND of its arguments.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+9 &&& 3
+```
+
+## Function <<</2
+
+Arithmetic left bitshift operator.
+
+Calculates the result of an arithmetic left bitshift.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+1 <<< 2
+```
+
+```elixir
+1 <<< -2
+```
+
+```elixir
+-1 <<< 2
+```
+
+```elixir
+-1 <<< -2
+```
+
+## Function >>>/2
+
+Arithmetic right bitshift operator.
+
+Calculates the result of an arithmetic right bitshift.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+1 >>> 2
+```
+
+```elixir
+1 >>> -2
+```
+
+```elixir
+-1 >>> 2
+```
+
+```elixir
+-1 >>> -2
+```
+
+## Function band/2
+
+Calculates the bitwise AND of its arguments.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+band(9, 3)
+```
+
+## Function bnot/1
+
+Calculates the bitwise NOT of the argument.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+bnot(2)
+```
+
+```elixir
+bnot(2) &&& 3
+```
+
+## Function bor/2
+
+Calculates the bitwise OR of its arguments.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+bor(9, 3)
+```
+
+## Function bsl/2
+
+Calculates the result of an arithmetic left bitshift.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+bsl(1, 2)
+```
+
+```elixir
+bsl(1, -2)
+```
+
+```elixir
+bsl(-1, 2)
+```
+
+```elixir
+bsl(-1, -2)
+```
+
+## Function bsr/2
+
+Calculates the result of an arithmetic right bitshift.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+bsr(1, 2)
+```
+
+```elixir
+bsr(1, -2)
+```
+
+```elixir
+bsr(-1, 2)
+```
+
+```elixir
+bsr(-1, -2)
+```
+
+## Function bxor/2
+
+Calculates the bitwise XOR of its arguments.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+bxor(9, 3)
+```
+
+## Function |||/2
+
+Bitwise OR operator.
+
+Calculates the bitwise OR of its arguments.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+9 ||| 3
+```
+
+## Function ~~~/1
+
+Bitwise NOT unary operator.
+
+Calculates the bitwise NOT of the argument.
+
+Allowed in guard tests. Inlined by the compiler.
+
+## Examples
+
+```elixir
+~~~2
+```
+
+```elixir
+~~~2 &&& 3
+```

@@ -1,0 +1,21 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Hex
+
+## Function ensure_installed?/1
+
+Returns `true` if `Hex` is loaded or installed. Otherwise returns `false`.
+
+## Function ensure_updated?/0
+
+Returns `true` if it has the required `Hex`. If an update is performed, it then exits.
+Otherwise returns `false` without updating anything.
+
+## Function mirror/0
+
+Returns the URL to the Hex mirror.
+
+## Function start/0
+
+Ensures `Hex` is started.
+

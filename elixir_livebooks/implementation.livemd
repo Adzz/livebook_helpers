@@ -1,0 +1,6 @@
+<!-- vim: syntax=markdown -->
+
+# Implementation
+
+This is the actual moduledoc
+

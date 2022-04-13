@@ -1,0 +1,13 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.Clean
+
+Deletes generated application files.
+
+This command deletes all build artifacts for the current project.
+Dependencies' sources and build files are cleaned only if the
+`--deps` option is given.
+
+By default this task works across all environments, unless `--only`
+is given.
+

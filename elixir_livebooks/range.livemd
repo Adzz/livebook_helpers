@@ -1,0 +1,222 @@
+<!-- vim: syntax=markdown -->
+
+# Range
+
+Ranges represent a sequence of zero, one or many, ascending
+or descending integers with a common difference called step.
+
+Ranges are always inclusive and they may have custom steps.
+The most common form of creating and matching on ranges is
+via the [`first..last`](`../2`) and [`first..last//step`](`..///3`)
+notations, auto-imported from `Kernel`:
+
+```elixir
+Enum.to_list(1..3)
+```
+```elixir
+Enum.to_list(1..3//2)
+```
+```elixir
+Enum.to_list(3..1//-1)
+```
+Ranges may also have a single element:
+
+```elixir
+Enum.to_list(1..1)
+```
+```elixir
+Enum.to_list(1..1//2)
+```
+Or even no elements at all:
+
+```elixir
+Enum.to_list(10..0//1)
+```
+```elixir
+Enum.to_list(0..10//-1)
+```
+When defining a range without a step, the step will be
+defined based on the first and last position of the
+range, If `first >= last`, it will be an increasing range
+with a step of 1. Otherwise, it is a decreasing range.
+Note however implicitly decreasing ranges are deprecated.
+Therefore, if you need a decreasing range from `3` to `1`,
+prefer to write `3..1//-1` instead.
+
+## Definition
+
+An increasing range `first..last//step` is a range from
+`first` to `last` increasing by `step` where  `step` must be a positive
+integer and all values `v` must be `first <= v and v <= last`. Therefore, a range
+`10..0//1` is an empty range because there is no value `v`
+that is `10 <= v and v <= 0`.
+
+Similarly, a decreasing range `first..last//step` is a range
+from `first` to `last` decreasing by `step` where `step` must be a negative
+integer and  values `v` must be `first >= v and v >= last`. Therefore, a range
+`0..10//-1` is an empty range because there is no value `v`
+that is `0 >= v and v >= 10`.
+
+## Representation
+
+Internally, ranges are represented as structs:
+
+```elixir
+range = 1..9//2
+```
+```elixir
+first..last//step = range
+first
+```
+```elixir
+last
+```
+```elixir
+step
+```
+```elixir
+range.step
+```
+You can access the range fields (`first`, `last`, and `step`)
+directly but you should not modify nor create ranges by hand.
+Instead use the proper operators or `new/2` and `new/3`.
+
+A range implements the `Enumerable` protocol, which means
+functions in the `Enum` module can be used to work with
+ranges:
+
+```elixir
+range = 1..10
+```
+```elixir
+Enum.reduce(range, 0, fn i, acc -> i * i + acc end)
+```
+```elixir
+Enum.count(range)
+```
+```elixir
+Enum.member?(range, 11)
+```
+```elixir
+Enum.member?(range, 8)
+```
+Such function calls are efficient memory-wise no matter the
+size of the range. The implementation of the `Enumerable`
+protocol uses logic based solely on the endpoints and does
+not materialize the whole list of integers.
+
+## Function disjoint?/2
+
+Checks if two ranges are disjoint.
+
+## Examples
+
+```elixir
+Range.disjoint?(1..5, 6..9)
+```
+```elixir
+Range.disjoint?(5..1, 6..9)
+```
+```elixir
+Range.disjoint?(1..5, 5..9)
+```
+```elixir
+Range.disjoint?(1..5, 2..7)
+```
+Steps are also considered when computing the ranges to be disjoint:
+
+```elixir
+Range.disjoint?(1..10//2, 2..10//2)
+```
+```elixir
+# First element in common in all below is 29
+```
+
+```elixir
+Range.disjoint?(2..100//3, 9..100//5)
+```
+```elixir
+Range.disjoint?(101..2//-3, 99..9//-5)
+```
+```elixir
+Range.disjoint?(1..100//14, 8..100//21)
+```
+```elixir
+Range.disjoint?(57..-1//-14, 8..100//21)
+```
+```elixir
+Range.disjoint?(1..100//14, 51..8//-21)
+```
+```elixir
+# If 29 is out of range
+```
+
+```elixir
+Range.disjoint?(1..28//14, 8..28//21)
+```
+```elixir
+Range.disjoint?(2..28//3, 9..28//5)
+```
+
+## Function new/2
+
+Creates a new range.
+
+If `first` is less than `last`, the range will be increasing from
+`first` to `last`. If `first` is equal to `last`, the range will contain
+one element, which is the number itself.
+
+If `first` is greater than `last`, the range will be decreasing from `first`
+to `last`, albeit this behaviour is deprecated. Therefore, it is advised to
+explicitly list the step with `new/3`.
+
+## Examples
+
+```elixir
+Range.new(-100, 100)
+```
+
+## Function new/3
+
+Creates a new range with `step`.
+
+## Examples
+
+```elixir
+Range.new(-100, 100, 2)
+```
+
+## Function size/1
+
+Returns the size of `range`.
+
+## Examples
+
+```elixir
+Range.size(1..10)
+```
+```elixir
+Range.size(1..10//2)
+```
+```elixir
+Range.size(1..10//3)
+```
+```elixir
+Range.size(1..10//-1)
+```
+```elixir
+Range.size(10..1)
+```
+```elixir
+Range.size(10..1//-1)
+```
+```elixir
+Range.size(10..1//-2)
+```
+```elixir
+Range.size(10..1//-3)
+```
+```elixir
+Range.size(10..1//1)
+```
+

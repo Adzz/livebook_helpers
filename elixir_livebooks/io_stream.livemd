@@ -1,0 +1,15 @@
+<!-- vim: syntax=markdown -->
+
+# IO.Stream
+
+Defines an `IO.Stream` struct returned by `IO.stream/2` and `IO.binstream/2`.
+
+The following fields are public:
+
+  * `device`        - the IO device
+  * `raw`           - a boolean indicating if bin functions should be used
+  * `line_or_bytes` - if reading should read lines or a given number of bytes
+
+It is worth noting that an IO stream has side effects and every time you goover the stream you may get different results.
+
+

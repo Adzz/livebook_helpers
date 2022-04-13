@@ -1,0 +1,42 @@
+<!-- vim: syntax=markdown -->
+
+# IO.ANSI.Docs
+
+## Function default_options/0
+
+The default options used by this module.
+
+The supported keys are:
+
+  * `:enabled`           - toggles coloring on and off (true)
+  * `:doc_bold`          - bold text (bright)
+  * `:doc_code`          - code blocks (cyan)
+  * `:doc_headings`      - h1, h2, h3, h4, h5, h6 headings (yellow)
+  * `:doc_metadata`      - documentation metadata keys (yellow)
+  * `:doc_quote`         - leading quote character `> ` (light black)
+  * `:doc_inline_code`   - inline code (cyan)
+  * `:doc_table_heading` - the style for table headings
+  * `:doc_title`         - top level heading (reverse, yellow)
+  * `:doc_underline`     - underlined text (underline)
+  * `:width`             - the width to format the text (80)
+
+Values for the color settings are strings withcomma-separated ANSI values.
+
+## Function print/3
+
+Prints the documentation body `doc` according to `format`.
+
+It takes a set of `options` defined in `default_options/0`.
+
+## Function print_headings/2
+
+Prints the head of the documentation (i.e. the function signature).
+
+See `default_options/0` for docs on the supported options.
+
+## Function print_metadata/2
+
+Prints documentation metadata (only `delegate_to`, `deprecated`, `guard`, and `since` for now).
+
+See `default_options/0` for docs on the supported options.
+

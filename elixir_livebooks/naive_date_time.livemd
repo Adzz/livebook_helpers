@@ -1,0 +1,699 @@
+<!-- vim: syntax=markdown -->
+
+# NaiveDateTime
+
+A NaiveDateTime struct (without a time zone) and functions.
+
+The NaiveDateTime struct contains the fields year, month, day, hour,
+minute, second, microsecond and calendar. New naive datetimes can be
+built with the `new/2` and `new/8` functions or using the
+`~N` (see `Kernel.sigil_N/2`) sigil:
+
+```elixir
+~N[2000-01-01 23:00:07]
+```
+The date and time fields in the struct can be accessed directly:
+
+```elixir
+naive = ~N[2000-01-01 23:00:07]
+naive.year
+```
+```elixir
+naive.second
+```
+We call them "naive" because this datetime representation does not
+have a time zone. This means the datetime may not actually exist in
+certain areas in the world even though it is valid.
+
+For example, when daylight saving changes are applied by a region,
+the clock typically moves forward or backward by one hour. This means
+certain datetimes never occur or may occur more than once. Since
+`NaiveDateTime` is not validated against a time zone, such errors
+would go unnoticed.
+
+Developers should avoid creating the NaiveDateTime structs directly
+and instead, rely on the functions provided by this module as well
+as the ones in third-party calendar libraries.
+
+## Comparing naive date times
+
+Comparisons in Elixir using `==/2`, `>/2`, `</2` and similar are structural
+and based on the `NaiveDateTime` struct fields. For proper comparison
+between naive datetimes, use the `compare/2` function.
+
+## Using epochs
+
+The `add/3` and `diff/3` functions can be used for computing with
+date times or retrieving the number of seconds between instants.
+For example, if there is an interest in computing the number of
+seconds from the Unix epoch (1970-01-01 00:00:00):
+
+```elixir
+NaiveDateTime.diff(~N[2010-04-17 14:00:00], ~N[1970-01-01 00:00:00])
+```
+```elixir
+NaiveDateTime.add(~N[1970-01-01 00:00:00], 1_271_512_800)
+```
+Those functions are optimized to deal with common epochs, such
+as the Unix Epoch above or the Gregorian Epoch (0000-01-01 00:00:00).
+
+## Function add/3
+
+Adds a specified amount of time to a `NaiveDateTime`.
+
+Accepts an `amount_to_add` in any `unit` available from `t:System.time_unit/0`.
+Negative values will move backwards in time.
+
+## Examples
+
+```elixir
+# adds seconds by default
+```
+
+```elixir
+NaiveDateTime.add(~N[2014-10-02 00:29:10], 2)
+```
+```elixir
+# accepts negative offsets
+```
+
+```elixir
+NaiveDateTime.add(~N[2014-10-02 00:29:10], -2)
+```
+```elixir
+# can work with other units
+```
+
+```elixir
+NaiveDateTime.add(~N[2014-10-02 00:29:10], 2_000, :millisecond)
+```
+```elixir
+# keeps the same precision
+```
+
+```elixir
+NaiveDateTime.add(~N[2014-10-02 00:29:10.021], 21, :second)
+```
+```elixir
+# changes below the precision will not be visible
+```
+
+```elixir
+hidden = NaiveDateTime.add(~N[2014-10-02 00:29:10], 21, :millisecond)
+# ~N[2014-10-02 00:29:10]
+hidden.microsecond
+```
+```elixir
+# from Gregorian seconds
+```
+
+```elixir
+NaiveDateTime.add(~N[0000-01-01 00:00:00], 63_579_428_950)
+```
+Passing a `DateTime` automatically converts it to `NaiveDateTime`,
+discarding the time zone information:
+
+```elixir
+dt = %DateTime{
+  year: 2000,
+  month: 2,
+  day: 29,
+  zone_abbr: "CET",
+  hour: 23,
+  minute: 0,
+  second: 7,
+  microsecond: {0, 0},
+  utc_offset: 3600,
+  std_offset: 0,
+  time_zone: "Europe/Warsaw"
+}
+
+NaiveDateTime.add(dt, 21, :second)
+```
+
+## Function compare/2
+
+Compares two `NaiveDateTime` structs.
+
+Returns `:gt` if first is later than the second
+and `:lt` for vice versa. If the two NaiveDateTime
+are equal `:eq` is returned.
+
+## Examples
+
+```elixir
+NaiveDateTime.compare(~N[2016-04-16 13:30:15], ~N[2016-04-28 16:19:25])
+```
+```elixir
+NaiveDateTime.compare(~N[2016-04-16 13:30:15.1], ~N[2016-04-16 13:30:15.01])
+```
+This function can also be used to compare a DateTime without
+the time zone information:
+
+```elixir
+dt = %DateTime{
+  year: 2000,
+  month: 2,
+  day: 29,
+  zone_abbr: "CET",
+  hour: 23,
+  minute: 0,
+  second: 7,
+  microsecond: {0, 0},
+  utc_offset: 3600,
+  std_offset: 0,
+  time_zone: "Europe/Warsaw"
+}
+
+NaiveDateTime.compare(dt, ~N[2000-02-29 23:00:07])
+```
+```elixir
+NaiveDateTime.compare(dt, ~N[2000-01-29 23:00:07])
+```
+```elixir
+NaiveDateTime.compare(dt, ~N[2000-03-29 23:00:07])
+```
+
+## Function convert/2
+
+Converts the given `naive_datetime` from one calendar to another.
+
+If it is not possible to convert unambiguously between the calendars
+(see `Calendar.compatible_calendars?/2`), an `{:error, :incompatible_calendars}` tuple
+is returned.
+
+## Examples
+
+Imagine someone implements `Calendar.Holocene`, a calendar based on the
+Gregorian calendar that adds exactly 10,000 years to the current Gregorian
+year:
+
+```elixir
+NaiveDateTime.convert(~N[2000-01-01 13:30:15], Calendar.Holocene)
+```
+
+## Function convert!/2
+
+Converts the given `naive_datetime` from one calendar to another.
+
+If it is not possible to convert unambiguously between the calendars
+(see `Calendar.compatible_calendars?/2`), an ArgumentError is raised.
+
+## Examples
+
+Imagine someone implements `Calendar.Holocene`, a calendar based on the
+Gregorian calendar that adds exactly 10,000 years to the current Gregorian
+year:
+
+```elixir
+NaiveDateTime.convert!(~N[2000-01-01 13:30:15], Calendar.Holocene)
+```
+
+## Function diff/3
+
+Subtracts `naive_datetime2` from `naive_datetime1`.
+
+The answer can be returned in any `unit` available from `t:System.time_unit/0`.
+
+This function returns the difference in seconds where seconds are measured
+according to `Calendar.ISO`.
+
+## Examples
+
+```elixir
+NaiveDateTime.diff(~N[2014-10-02 00:29:12], ~N[2014-10-02 00:29:10])
+```
+```elixir
+NaiveDateTime.diff(~N[2014-10-02 00:29:12], ~N[2014-10-02 00:29:10], :microsecond)
+```
+```elixir
+NaiveDateTime.diff(~N[2014-10-02 00:29:10.042], ~N[2014-10-02 00:29:10.021], :millisecond)
+```
+```elixir
+NaiveDateTime.diff(~N[2014-10-02 00:29:10], ~N[2014-10-02 00:29:12])
+```
+```elixir
+NaiveDateTime.diff(~N[-0001-10-02 00:29:10], ~N[-0001-10-02 00:29:12])
+```
+```elixir
+# to Gregorian seconds
+```
+
+```elixir
+NaiveDateTime.diff(~N[2014-10-02 00:29:10], ~N[0000-01-01 00:00:00])
+```
+
+## Function from_erl/3
+
+Converts an Erlang datetime tuple to a `NaiveDateTime` struct.
+
+Attempting to convert an invalid ISO calendar date will produce an error tuple.
+
+## Examples
+
+```elixir
+NaiveDateTime.from_erl({{2000, 1, 1}, {13, 30, 15}})
+```
+```elixir
+NaiveDateTime.from_erl({{2000, 1, 1}, {13, 30, 15}}, {5000, 3})
+```
+```elixir
+NaiveDateTime.from_erl({{2000, 13, 1}, {13, 30, 15}})
+```
+```elixir
+NaiveDateTime.from_erl({{2000, 13, 1}, {13, 30, 15}})
+```
+
+## Function from_erl!/3
+
+Converts an Erlang datetime tuple to a `NaiveDateTime` struct.
+
+Raises if the datetime is invalid.
+Attempting to convert an invalid ISO calendar date will produce an error tuple.
+
+## Examples
+
+```elixir
+NaiveDateTime.from_erl!({{2000, 1, 1}, {13, 30, 15}})
+```
+```elixir
+NaiveDateTime.from_erl!({{2000, 1, 1}, {13, 30, 15}}, {5000, 3})
+```
+```elixir
+NaiveDateTime.from_erl!({{2000, 13, 1}, {13, 30, 15}})
+```
+
+## Function from_gregorian_seconds/3
+
+Converts a number of gregorian seconds to a `NaiveDateTime` struct.
+
+## Examples
+
+```elixir
+NaiveDateTime.from_gregorian_seconds(1)
+```
+```elixir
+NaiveDateTime.from_gregorian_seconds(63_755_511_991, {5000, 3})
+```
+```elixir
+NaiveDateTime.from_gregorian_seconds(-1)
+```
+
+## Function from_iso8601/2
+
+Parses the extended "Date and time of day" format described by
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+Time zone offset may be included in the string but they will be
+simply discarded as such information is not included in naive date
+times.
+
+As specified in the standard, the separator "T" may be omitted if
+desired as there is no ambiguity within this function.
+
+Note leap seconds are not supported by the built-in Calendar.ISO.
+
+## Examples
+
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23 23:50:07")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07Z")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23 23:50:07.0")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23 23:50:07,0123456")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23 23:50:07.0123456")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07.123Z")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23P23:50:07")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015:01:23 23-50-07")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23 23:50:07A")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23 23:50:61")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-32 23:50:07")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07.123+02:30")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07.123+00:00")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07.123-02:30")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07.123-00:00")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07.123-00:60")
+```
+```elixir
+NaiveDateTime.from_iso8601("2015-01-23T23:50:07.123-24:00")
+```
+
+## Function from_iso8601!/2
+
+Parses the extended "Date and time of day" format described by
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+Raises if the format is invalid.
+
+## Examples
+
+```elixir
+NaiveDateTime.from_iso8601!("2015-01-23T23:50:07.123Z")
+```
+```elixir
+NaiveDateTime.from_iso8601!("2015-01-23T23:50:07,123Z")
+```
+```elixir
+NaiveDateTime.from_iso8601!("2015-01-23P23:50:07")
+```
+
+## Function local_now/1
+
+Returns the "local time" for the machine the Elixir program is running on.
+
+WARNING: This function can cause insidious bugs. It depends on the time zone
+configuration at run time. This can changed and be set to a time zone that has
+daylight saving jumps (spring forward or fall back).
+
+This function can be used to display what the time is right now for the time
+zone configuration that the machine happens to have. An example would be a
+desktop program displaying a clock to the user. For any other uses it is
+probably a bad idea to use this function.
+
+For most cases, use `DateTime.now/2` or `DateTime.utc_now/1` instead.
+
+Does not include fractional seconds.
+
+## Examples
+
+```elixir
+naive_datetime = NaiveDateTime.local_now()
+naive_datetime.year >= 2019
+```
+
+## Function new/2
+
+Builds a naive datetime from date and time structs.
+
+## Examples
+
+```elixir
+NaiveDateTime.new(~D[2010-01-13], ~T[23:00:07.005])
+```
+
+## Function new/8
+
+Builds a new ISO naive datetime.
+
+Expects all values to be integers. Returns `{:ok, naive_datetime}`
+if each entry fits its appropriate range, returns `{:error, reason}`
+otherwise.
+
+## Examples
+
+```elixir
+NaiveDateTime.new(2000, 1, 1, 0, 0, 0)
+```
+```elixir
+NaiveDateTime.new(2000, 13, 1, 0, 0, 0)
+```
+```elixir
+NaiveDateTime.new(2000, 2, 29, 0, 0, 0)
+```
+```elixir
+NaiveDateTime.new(2000, 2, 30, 0, 0, 0)
+```
+```elixir
+NaiveDateTime.new(2001, 2, 29, 0, 0, 0)
+```
+```elixir
+NaiveDateTime.new(2000, 1, 1, 23, 59, 59, {0, 1})
+```
+```elixir
+NaiveDateTime.new(2000, 1, 1, 23, 59, 59, 999_999)
+```
+```elixir
+NaiveDateTime.new(2000, 1, 1, 24, 59, 59, 999_999)
+```
+```elixir
+NaiveDateTime.new(2000, 1, 1, 23, 60, 59, 999_999)
+```
+```elixir
+NaiveDateTime.new(2000, 1, 1, 23, 59, 60, 999_999)
+```
+```elixir
+NaiveDateTime.new(2000, 1, 1, 23, 59, 59, 1_000_000)
+```
+```elixir
+NaiveDateTime.new(2000, 1, 1, 23, 59, 59, {0, 1}, Calendar.ISO)
+```
+
+## Function new!/2
+
+Builds a naive datetime from date and time structs.
+
+## Examples
+
+```elixir
+NaiveDateTime.new!(~D[2010-01-13], ~T[23:00:07.005])
+```
+
+## Function new!/8
+
+Builds a new ISO naive datetime.
+
+Expects all values to be integers. Returns `naive_datetime`
+if each entry fits its appropriate range, raises if
+time or date is invalid.
+
+## Examples
+
+```elixir
+NaiveDateTime.new!(2000, 1, 1, 0, 0, 0)
+```
+```elixir
+NaiveDateTime.new!(2000, 2, 29, 0, 0, 0)
+```
+```elixir
+NaiveDateTime.new!(2000, 1, 1, 23, 59, 59, {0, 1})
+```
+```elixir
+NaiveDateTime.new!(2000, 1, 1, 23, 59, 59, 999_999)
+```
+```elixir
+NaiveDateTime.new!(2000, 1, 1, 23, 59, 59, {0, 1}, Calendar.ISO)
+```
+```elixir
+NaiveDateTime.new!(2000, 1, 1, 24, 59, 59, 999_999)
+```
+
+## Function to_date/1
+
+Converts a `NaiveDateTime` into a `Date`.
+
+Because `Date` does not hold time information,
+data will be lost during the conversion.
+
+## Examples
+
+```elixir
+NaiveDateTime.to_date(~N[2002-01-13 23:00:07])
+```
+
+## Function to_erl/1
+
+Converts a `NaiveDateTime` struct to an Erlang datetime tuple.
+
+Only supports converting naive datetimes which are in the ISO calendar,
+attempting to convert naive datetimes from other calendars will raise.
+
+WARNING: Loss of precision may occur, as Erlang time tuples only store
+hour/minute/second.
+
+## Examples
+
+```elixir
+NaiveDateTime.to_erl(~N[2000-01-01 13:30:15])
+```
+This function can also be used to convert a DateTime to an Erlang
+datetime tuple without the time zone information:
+
+```elixir
+dt = %DateTime{
+  year: 2000,
+  month: 2,
+  day: 29,
+  zone_abbr: "CET",
+  hour: 23,
+  minute: 0,
+  second: 7,
+  microsecond: {0, 0},
+  utc_offset: 3600,
+  std_offset: 0,
+  time_zone: "Europe/Warsaw"
+}
+
+NaiveDateTime.to_erl(dt)
+```
+
+## Function to_gregorian_seconds/1
+
+Converts a `NaiveDateTime` struct to a number of gregorian seconds and microseconds.
+
+## Examples
+
+```elixir
+NaiveDateTime.to_gregorian_seconds(~N[0000-01-01 00:00:01])
+```
+```elixir
+NaiveDateTime.to_gregorian_seconds(~N[2020-05-01 00:26:31.005])
+```
+
+## Function to_iso8601/2
+
+Converts the given naive datetime to
+[ISO 8601:2019](https://en.wikipedia.org/wiki/ISO_8601).
+
+By default, `NaiveDateTime.to_iso8601/2` returns naive datetimes formatted in the "extended"
+format, for human readability. It also supports the "basic" format through passing the `:basic` option.
+
+Only supports converting naive datetimes which are in the ISO calendar,
+attempting to convert naive datetimes from other calendars will raise.
+
+### Examples
+
+```elixir
+NaiveDateTime.to_iso8601(~N[2000-02-28 23:00:13])
+```
+```elixir
+NaiveDateTime.to_iso8601(~N[2000-02-28 23:00:13.001])
+```
+```elixir
+NaiveDateTime.to_iso8601(~N[2000-02-28 23:00:13.001], :basic)
+```
+This function can also be used to convert a DateTime to ISO 8601 without
+the time zone information:
+
+```elixir
+dt = %DateTime{
+  year: 2000,
+  month: 2,
+  day: 29,
+  zone_abbr: "CET",
+  hour: 23,
+  minute: 0,
+  second: 7,
+  microsecond: {0, 0},
+  utc_offset: 3600,
+  std_offset: 0,
+  time_zone: "Europe/Warsaw"
+}
+
+NaiveDateTime.to_iso8601(dt)
+```
+
+## Function to_string/1
+
+Converts the given naive datetime to a string according to its calendar.
+
+### Examples
+
+```elixir
+NaiveDateTime.to_string(~N[2000-02-28 23:00:13])
+```
+```elixir
+NaiveDateTime.to_string(~N[2000-02-28 23:00:13.001])
+```
+```elixir
+NaiveDateTime.to_string(~N[-0100-12-15 03:20:31])
+```
+This function can also be used to convert a DateTime to a string without
+the time zone information:
+
+```elixir
+dt = %DateTime{
+  year: 2000,
+  month: 2,
+  day: 29,
+  zone_abbr: "CET",
+  hour: 23,
+  minute: 0,
+  second: 7,
+  microsecond: {0, 0},
+  utc_offset: 3600,
+  std_offset: 0,
+  time_zone: "Europe/Warsaw"
+}
+
+NaiveDateTime.to_string(dt)
+```
+
+## Function to_time/1
+
+Converts a `NaiveDateTime` into `Time`.
+
+Because `Time` does not hold date information,
+data will be lost during the conversion.
+
+## Examples
+
+```elixir
+NaiveDateTime.to_time(~N[2002-01-13 23:00:07])
+```
+
+## Function truncate/2
+
+Returns the given naive datetime with the microsecond field truncated to the
+given precision (`:microsecond`, `:millisecond` or `:second`).
+
+The given naive datetime is returned unchanged if it already has lower precision
+than the given precision.
+
+## Examples
+
+```elixir
+NaiveDateTime.truncate(~N[2017-11-06 00:23:51.123456], :microsecond)
+```
+```elixir
+NaiveDateTime.truncate(~N[2017-11-06 00:23:51.123456], :millisecond)
+```
+```elixir
+NaiveDateTime.truncate(~N[2017-11-06 00:23:51.123456], :second)
+```
+
+## Function utc_now/1
+
+Returns the current naive datetime in UTC.
+
+Prefer using `DateTime.utc_now/0` when possible as, opposite
+to `NaiveDateTime`, it will keep the time zone information.
+
+## Examples
+
+```elixir
+naive_datetime = NaiveDateTime.utc_now()
+naive_datetime.year >= 2016
+```
+

@@ -1,0 +1,75 @@
+<!-- vim: syntax=markdown -->
+
+# Atom
+
+Atoms are constants whose values are their own name.
+
+They are often useful to enumerate over distinct values, such as:
+
+```elixir
+:apple
+```
+```elixir
+:orange
+```
+```elixir
+:watermelon
+```
+Atoms are equal if their names are equal.
+
+```elixir
+:apple == :apple
+```
+```elixir
+:apple == :orange
+```
+Often they are used to express the state of an operation, by using
+values such as `:ok` and `:error`.
+
+The booleans `true` and `false` are also atoms:
+
+```elixir
+true == true
+```
+```elixir
+is_atom(false)
+```
+```elixir
+is_boolean(false)
+```
+Elixir allows you to skip the leading `:` for the atoms `false`, `true`,
+and `nil`.
+
+Atoms must be composed of Unicode characters such as letters, numbers,
+underscore, and `@`. If the keyword has a character that does not
+belong to the category above, such as spaces, you can wrap it in
+quotes:
+
+```elixir
+:"this is an atom with spaces"
+```
+
+## Function to_charlist/1
+
+Converts an atom to a charlist.
+
+Inlined by the compiler.
+
+## Examples
+
+```elixir
+Atom.to_charlist(:"An atom")
+```
+
+## Function to_string/1
+
+Converts an atom to a string.
+
+Inlined by the compiler.
+
+## Examples
+
+```elixir
+Atom.to_string(:foo)
+```
+

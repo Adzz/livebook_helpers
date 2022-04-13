@@ -1,0 +1,72 @@
+<!-- vim: syntax=markdown -->
+
+# IEx.Pry
+
+The low-level API for prying sessions and setting up breakpoints.
+
+## Function break/4
+
+Sets up a breakpoint on the given module/function/arity.
+
+## Function break/6
+
+Sets up a breakpoint on the given module/function/args with the given `guard`.
+
+It requires an `env` to be given to make the expansion of the guards.
+
+## Function break!/4
+
+Raising variant of `break/4`.
+
+## Function break!/6
+
+Raising variant of `break/6`.
+
+## Function breaks/0
+
+Returns all breakpoints.
+
+## Function pry/2
+
+Callback for `IEx.pry/0`.
+
+You can invoke this function directly when you are not able to invoke
+`IEx.pry/0` as a macro. This function expects the binding (from
+`Kernel.binding/0`) and the environment (from `__ENV__/0`).
+
+## Function remove_breaks/0
+
+Removes all breakpoints on all modules.
+
+This effectively loads the non-instrumented version of
+currently instrumented modules into memory.
+
+## Function remove_breaks/1
+
+Removes breakpoints in the given module.
+
+This effectively loads the non-instrumented version of
+the module into memory.
+
+## Function reset_break/1
+
+Resets the breaks on a given breakpoint ID.
+
+## Function reset_break/3
+
+Resets the breaks for the given `module`, `function` and `arity`.
+
+If the `module` is not instrumented or if the given `function`
+does not have a breakpoint, it is a no-op and it returns
+`:not_found`. Otherwise it returns `:ok`.
+
+## Function whereami/3
+
+Formats the location for `whereami/3` prying.
+
+It receives the `file`, `line` and the snippet `radius` and
+returns `{:ok, lines}`, where lines is a list of chardata
+containing each formatted line, or `:error`.
+
+The actual line is especially formatted in bold.
+

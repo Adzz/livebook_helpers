@@ -1,0 +1,10 @@
+<!-- vim: syntax=markdown -->
+
+# Kernel.Typespec
+
+## Function deftypespec/6
+
+Defines a typespec.
+
+Invoked by `Kernel.@/1` expansion.
+

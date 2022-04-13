@@ -1,0 +1,6 @@
+<!-- vim: syntax=markdown -->
+
+# Inspect.Error
+
+Raised when a struct cannot be inspected.
+

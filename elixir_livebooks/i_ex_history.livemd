@@ -1,0 +1,23 @@
+<!-- vim: syntax=markdown -->
+
+# IEx.History
+
+## Function append/3
+
+Appends one entry to the history.
+
+## Function each/2
+
+Enumerates over all items in the history starting from the oldest one and
+applies `fun` to each one in turn.
+
+## Function init/0
+
+Initializes IEx history state.
+
+## Function nth/2
+
+Gets the nth item from the history.
+
+If `n` < 0, the count starts from the most recent item and goes back in time.
+

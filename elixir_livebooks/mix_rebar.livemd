@@ -1,0 +1,42 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Rebar
+
+## Function apply_overrides/3
+
+Applies the given overrides for app config.
+
+## Function dependency_config/1
+
+Updates Rebar configuration to be more suitable for dependencies.
+
+## Function deps/1
+
+Parses the dependencies in given `rebar.config` to Mix's dependency format.
+
+## Function global_rebar_cmd/1
+
+Returns the path to the global copy of `rebar`, defined by the
+environment variables `MIX_REBAR` or `MIX_REBAR3`.
+
+## Function load_config/1
+
+Loads `rebar.config` and evaluates `rebar.config.script` if it
+exists in the given directory.
+
+## Function local_rebar_cmd/1
+
+Returns the path to the local copy of `rebar`, if one exists.
+
+## Function local_rebar_path/1
+
+Returns the path supposed to host the local copy of `rebar`.
+
+## Function rebar_cmd/1
+
+Returns the path to the available `rebar` command.
+
+## Function serialize_config/1
+
+Serializes a Rebar config to a term file.
+

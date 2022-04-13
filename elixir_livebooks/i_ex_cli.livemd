@@ -1,0 +1,17 @@
+<!-- vim: syntax=markdown -->
+
+# IEx.CLI
+
+## Function start/0
+
+In order to work properly, IEx needs to be set as the
+proper `-user` when starting the Erlang VM and we do so
+by pointing exactly to this function.
+
+If possible, Elixir will start a tty (smart terminal)
+which makes all control commands available in tty
+available to the developer.
+
+In case `tty` is not available (for example, Windows),
+a dumb terminal version is started instead.
+

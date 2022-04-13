@@ -1,0 +1,420 @@
+<!-- vim: syntax=markdown -->
+
+# Path
+
+This module provides conveniences for manipulating or
+retrieving file system paths.
+
+The functions in this module may receive a chardata as
+argument (i.e. a string or a list of characters / string)
+and will always return a string (encoded in UTF-8). If a binary
+is given, in whatever encoding, its encoding will be kept.
+
+The majority of the functions in this module do not
+interact with the file system, except for a few functions
+that require it (like `wildcard/2` and `expand/1`).
+
+## Function absname/1
+
+Converts the given path to an absolute one. Unlike
+`expand/1`, no attempt is made to resolve `..`, `.` or `~`.
+
+## Examples
+
+### Unix-like operating systems
+
+```elixir
+Path.absname("foo")
+# => "/usr/local/foo"
+
+Path.absname("../x")
+# => "/usr/local/../x"
+```
+### Windows
+
+```elixir
+Path.absname("foo")
+# => "D:/usr/local/foo"
+
+Path.absname("../x")
+# => "D:/usr/local/../x"
+```
+## Function absname/2
+
+Builds a path from `relative_to` to `path`.
+
+If `path` is already an absolute path, `relative_to` is ignored. See also
+`relative_to/2`.
+
+Unlike `expand/2`, no attempt is made to
+resolve `..`, `.` or `~`.
+
+## Examples
+
+```elixir
+Path.absname("foo", "bar")
+```
+```elixir
+Path.absname("../x", "bar")
+```
+
+## Function basename/1
+
+Returns the last component of the path or the path
+itself if it does not contain any directory separators.
+
+## Examples
+
+```elixir
+Path.basename("foo")
+```
+```elixir
+Path.basename("foo/bar")
+```
+```elixir
+Path.basename("/")
+```
+
+## Function basename/2
+
+Returns the last component of `path` with the `extension`
+stripped.
+
+This function should be used to remove a specific
+extension which may or may not be there.
+
+## Examples
+
+```elixir
+Path.basename("~/foo/bar.ex", ".ex")
+```
+```elixir
+Path.basename("~/foo/bar.exs", ".ex")
+```
+```elixir
+Path.basename("~/foo/bar.old.ex", ".ex")
+```
+
+## Function dirname/1
+
+Returns the directory component of `path`.
+
+## Examples
+
+```elixir
+Path.dirname("/foo/bar.ex")
+```
+```elixir
+Path.dirname("/foo/bar/baz.ex")
+```
+```elixir
+Path.dirname("/foo/bar/")
+```
+```elixir
+Path.dirname("bar.ex")
+```
+
+## Function expand/1
+
+Converts the path to an absolute one and expands
+any `.` and `..` characters and a leading `~`.
+
+## Examples
+
+```elixir
+Path.expand("/foo/bar/../baz")
+# => "/foo/baz"
+```
+## Function expand/2
+
+Expands the path relative to the path given as the second argument
+expanding any `.` and `..` characters.
+
+If the path is already an absolute path, `relative_to` is ignored.
+
+Note that this function treats a `path` with a leading `~` as
+an absolute one.
+
+The second argument is first expanded to an absolute path.
+
+## Examples
+
+```elixir
+# Assuming that the absolute path to baz is /quux/baz
+Path.expand("foo/bar/../bar", "baz")
+# => "/quux/baz/foo/bar"
+
+Path.expand("foo/bar/../bar", "/baz")
+# => "/baz/foo/bar"
+
+Path.expand("/foo/bar/../bar", "/baz")
+# => "/foo/bar"
+```
+## Function extname/1
+
+Returns the extension of the last component of `path`.
+
+The behaviour of this function changed in Erlang/OTP 24 for filenames
+starting with a dot and without an extension. For example, for a file
+named ".gitignore", `extname/1` now returns an empty string, while it
+would return ".gitignore" in previous Erlang/OTP versions. This was
+done to match the behaviour of `rootname/1`, which would return
+".gitignore" as its name (and therefore it cannot also be an extension).
+
+See `basename/1` and `rootname/1` for related functions to extract
+information from paths.
+
+## Examples
+
+```elixir
+Path.extname("foo.erl")
+```
+```elixir
+Path.extname("~/foo/bar")
+```
+
+## Function join/1
+
+Joins a list of paths.
+
+This function should be used to convert a list of paths to a path.
+Note that any trailing slash is removed when joining.
+
+## Examples
+
+```elixir
+Path.join(["~", "foo"])
+```
+```elixir
+Path.join(["foo"])
+```
+```elixir
+Path.join(["/", "foo", "bar/"])
+```
+
+## Function join/2
+
+Joins two paths.
+
+The right path will always be expanded to its relative format
+and any trailing slash will be removed when joining.
+
+## Examples
+
+```elixir
+Path.join("foo", "bar")
+```
+```elixir
+Path.join("/foo", "/bar/")
+```
+The functions in this module support chardata, so giving a list will
+treat it as a single entity:
+
+```elixir
+Path.join("foo", ["bar", "fiz"])
+```
+```elixir
+Path.join(["foo", "bar"], "fiz")
+```
+
+## Function relative/1
+
+Forces the path to be a relative path.
+
+## Examples
+
+### Unix-like operating systems
+
+```elixir
+# => "usr/local/bin"
+Path.relative("/usr/local/bin")
+# => "usr/local/bin"
+Path.relative("usr/local/bin")
+# => "../usr/local/bin"
+Path.relative("../usr/local/bin")
+```
+### Windows
+
+```elixir
+# => "usr/local/bin"
+Path.relative("D:/usr/local/bin")
+# => "usr/local/bin"
+Path.relative("usr/local/bin")
+# => "bar.ex"
+Path.relative("D:bar.ex")
+# => "bar/foo.ex"
+Path.relative("/bar/foo.ex")
+```
+## Function relative_to/2
+
+Returns the given `path` relative to the given `from` path.
+
+In other words, this function tries to strip the `from` prefix from `path`.
+
+This function does not query the file system, so it assumes
+no symlinks between the paths.
+
+In case a direct relative path cannot be found, it returns
+the original path.
+
+## Examples
+
+```elixir
+Path.relative_to("/usr/local/foo", "/usr/local")
+```
+```elixir
+Path.relative_to("/usr/local/foo", "/")
+```
+```elixir
+Path.relative_to("/usr/local/foo", "/etc")
+```
+```elixir
+Path.relative_to("/usr/local/foo", "/usr/local/foo")
+```
+
+## Function relative_to_cwd/1
+
+Convenience to get the path relative to the current working
+directory.
+
+If, for some reason, the current working directory
+cannot be retrieved, this function returns the given `path`.
+
+## Function rootname/1
+
+Returns the `path` with the `extension` stripped.
+
+## Examples
+
+```elixir
+Path.rootname("/foo/bar")
+```
+```elixir
+Path.rootname("/foo/bar.ex")
+```
+
+## Function rootname/2
+
+Returns the `path` with the `extension` stripped.
+
+This function should be used to remove a specific extension which may
+or may not be there.
+
+## Examples
+
+```elixir
+Path.rootname("/foo/bar.erl", ".erl")
+```
+```elixir
+Path.rootname("/foo/bar.erl", ".ex")
+```
+
+## Function split/1
+
+Splits the path into a list at the path separator.
+
+If an empty string is given, returns an empty list.
+
+On Windows, path is split on both "\" and "/" separators
+and the driver letter, if there is one, is always returned
+in lowercase.
+
+## Examples
+
+```elixir
+Path.split("")
+```
+```elixir
+Path.split("foo")
+```
+```elixir
+Path.split("/foo/bar")
+```
+
+## Function type/1
+
+Returns the path type.
+
+## Examples
+
+### Unix-like operating systems
+
+```elixir
+# => :absolute
+Path.type("/")
+# => :absolute
+Path.type("/usr/local/bin")
+# => :relative
+Path.type("usr/local/bin")
+# => :relative
+Path.type("../usr/local/bin")
+# => :relative
+Path.type("~/file")
+```
+### Windows
+
+```elixir
+# => :absolute
+Path.type("D:/usr/local/bin")
+# => :relative
+Path.type("usr/local/bin")
+# => :volumerelative
+Path.type("D:bar.ex")
+# => :volumerelative
+Path.type("/bar/foo.ex")
+```
+## Function wildcard/2
+
+Traverses paths according to the given `glob` expression and returns a
+list of matches.
+
+The wildcard looks like an ordinary path, except that the following
+"wildcard characters" are interpreted in a special way:
+
+  * `?` - matches one character.
+
+  * `*` - matches any number of characters up to the end of the filename, the
+    next dot, or the next slash.
+
+  * `**` - two adjacent `*`'s used as a single pattern will match all
+    files and zero or more directories and subdirectories.
+
+  * `[char1,char2,...]` - matches any of the characters listed; two
+    characters separated by a hyphen will match a range of characters.
+    Do not add spaces before and after the comma as it would then match
+    paths containing the space character itself.
+
+  * `{item1,item2,...}` - matches one of the alternatives.
+    Do not add spaces before and after the comma as it would then match
+    paths containing the space character itself.
+
+Other characters represent themselves. Only paths that haveexactly the same character in the same position will match. Note
+that matching is case-sensitive: `"a"` will not match `"A"`.
+
+Directory separators must always be written as `/`, even on Windows.
+You may call `Path.expand/1` to normalize the path before invoking
+this function.
+
+By default, the patterns `*` and `?` do not match files starting
+with a dot `.`. See the `:match_dot` option in the "Options" section
+below.
+
+## Options
+
+  * `:match_dot` - (boolean) if `false`, the special wildcard characters `*` and `?`
+    will not match files starting with a dot (`.`). If `true`, files starting with
+    a `.` will not be treated specially. Defaults to `false`.
+
+## Examples
+Imagine you have a directory called `projects` with three Elixir projects
+inside of it: `elixir`, `ex_doc`, and `plug`. You can find all `.beam` files
+inside the `ebin` directory of each project as follows:
+
+```elixir
+Path.wildcard("projects/*/ebin/**/*.beam")
+```
+If you want to search for both `.beam` and `.app` files, you could do:
+
+```elixir
+Path.wildcard("projects/*/ebin/**/*.{beam,app}")
+```

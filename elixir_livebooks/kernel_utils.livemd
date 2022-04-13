@@ -1,0 +1,73 @@
+<!-- vim: syntax=markdown -->
+
+# Kernel.Utils
+
+## Function announce_struct/1
+
+Announcing callback for defstruct.
+
+## Function defdelegate/2
+
+Callback for defdelegate.
+
+## Function defstruct/2
+
+Callback for defstruct.
+
+## Function destructure/2
+
+Callback for destructure.
+
+## Function raise/1
+
+Callback for raise.
+
+## Macro defguard/2
+
+Callback for defguard.
+
+Rewrites an expression so it can be used both inside and outside a guard.
+
+Take, for example, the expression:
+
+```elixir
+is_integer(value) and rem(value, 2) == 0
+```
+If we wanted to create a macro, `is_even`, from this expression, that could be
+used in guards, we'd have to take several things into account.
+
+First, if this expression is being used inside a guard, `value` needs to be
+unquoted each place it occurs, since it has not yet been at that point in our
+macro.
+
+Secondly, if the expression is being used outside of a guard, we want to unquote
+`value`, but only once, and then re-use the unquoted form throughout the expression.
+
+This helper does exactly that: takes the AST for an expression and a list of
+variable references it should be aware of, and rewrites it into a new expression
+that checks for its presence in a guard, then unquotes the variable references as
+appropriate.
+
+The following code
+
+```elixir
+expression = quote do: is_integer(value) and rem(value, 2) == 0
+variable_references = [value: Elixir]
+Kernel.Utils.defguard(expression, variable_references) |> Macro.to_string() |> IO.puts()
+```
+would print a code similar to:
+
+```elixir
+case Macro.Env.in_guard?(__CALLER__) do
+  true ->
+    quote do
+      is_integer(unquote(value)) and rem(unquote(value), 2) == 0
+    end
+
+  false ->
+    quote do
+      value = unquote(value)
+      is_integer(value) and rem(value, 2) == 0
+    end
+end
+```

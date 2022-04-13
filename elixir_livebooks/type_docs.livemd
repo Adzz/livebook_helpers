@@ -1,0 +1,23 @@
+<!-- vim: syntax=markdown -->
+
+# TypeDocs
+
+## Function fun_time/1
+
+doc AND a spec?!
+
+## Type other_thing
+
+This is a type
+## Type final
+
+This is a type lower down the module, can it have elixir cells in it?
+
+```elixir
+1 + 1
+```
+This probably wont test?
+
+```elixir
+"example elixir though"
+```

@@ -1,0 +1,17 @@
+<!-- vim: syntax=markdown -->
+
+# Logger.Watcher
+
+## Function child_spec/1
+
+Returns a specification to start this module under a supervisor.
+
+See `Supervisor`.
+
+## Function start_link/1
+
+Starts a watcher server.
+
+This is useful when there is a need to start a handler
+outside of the handler supervision tree.
+

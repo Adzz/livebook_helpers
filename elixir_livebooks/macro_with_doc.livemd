@@ -1,0 +1,11 @@
+<!-- vim: syntax=markdown -->
+
+# MacroWithDoc
+
+## Macro with_a_doc/0
+
+Returns 1 probably.
+
+```elixir
+1 + 1
+```

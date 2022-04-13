@@ -1,0 +1,50 @@
+<!-- vim: syntax=markdown -->
+
+# Hex.Mix
+
+## Function dep/1
+
+Normalises a dependency definition to its 3-tuple form.
+
+## Function deps_to_requests/1
+
+Converts a list of dependencies to a requests to the resolver. Skips
+dependencies overriding with another SCM (but include dependencies
+overriding with Hex) and dependencies that are not Hex packages.
+
+## Function flatten_deps/2
+
+Given a tree of dependencies return a flat list of all dependencies in
+the tree.
+
+The returned flattened list is going to contain duplicated dependencies
+because we want to accumulate all of the different requirements.
+However we must skip overridden dependencies as their requirements
+are no longer relevant. We also skip dependencies that are not included
+in the original list of dependencies as they were likely filtered out
+due to options like `:only`.
+
+## Function from_lock/1
+
+Takes all Hex packages from the lock and returns them
+as `{name, app, version, repo}` tuples.
+
+## Function prepare_deps/1
+
+Prepare Mix dependencies for the format the resolver expects.
+
+## Function to_lock/1
+
+Takes a map of `{name, version}` and returns them as a
+lock of Hex packages.
+
+## Function top_level/1
+
+Returns all top level dependencies.
+
+## Function version_match?/2
+
+Returns `true` if the version and requirement match.
+
+See `Version.match?/2`.
+

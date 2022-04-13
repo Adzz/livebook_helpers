@@ -1,0 +1,13 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Dep.Lock
+
+## Function read/0
+
+Reads the lockfile, returns a map containing
+each app name and its current lock information.
+
+## Function write/1
+
+Receives a map and writes it as the latest lock.
+

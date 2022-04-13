@@ -1,0 +1,15 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.Archive
+
+Lists all installed archives.
+
+Archives are typically installed at `~/.mix/archives`
+although the installation path can be customized by
+setting the `MIX_ARCHIVES` environment variable.
+
+Since archives are specific to Elixir versions, it is
+expected from build tools to swap the `MIX_ARCHIVES`
+variable to different locations based on a particular
+Elixir installation.
+

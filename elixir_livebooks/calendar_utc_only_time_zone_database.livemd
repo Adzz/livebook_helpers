@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# Calendar.UTCOnlyTimeZoneDatabase
+
+Built-in time zone database that works only in Etc/UTC.
+
+For all other time zones, it returns `{:error, :utc_only_time_zone_database}`.
+

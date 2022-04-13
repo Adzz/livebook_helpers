@@ -1,0 +1,12 @@
+<!-- vim: syntax=markdown -->
+
+# HashDict
+
+Tuple-based HashDict implementation.
+
+This module is deprecated. Use the `Map` module instead.
+
+## Function new/0
+
+Creates a new empty dict.
+

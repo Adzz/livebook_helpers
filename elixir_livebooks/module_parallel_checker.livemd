@@ -1,0 +1,56 @@
+<!-- vim: syntax=markdown -->
+
+# Module.ParallelChecker
+
+## Function all_exports/2
+
+Returns all exported functions and macros for the given module from
+the cache.
+
+## Function fetch_export/4
+
+Returns the export kind and deprecation reason for the given MFA from
+the cache. If the module does not exist return `{:error, :module}`,
+or if the function does not exist return `{:error, :function}`.
+
+## Function get/0
+
+Gets the parallel checker data from pdict.
+
+## Function preload_module/2
+
+Preloads a module into the cache. Call this function before any other
+cache lookups for the module.
+
+## Function put/2
+
+Stores the parallel checker information.
+
+## Function spawn/3
+
+Spawns a process that runs the parallel checker.
+
+## Function start_link/1
+
+Initializes the parallel checker process.
+
+## Function stop/1
+
+Stops the parallel checker process.
+
+## Function test_cache/0
+
+Test cache.
+
+## Function verify/1
+
+Verifies the given compilation function
+by starting a checker if one does not exist.
+See `verify/3`.
+
+## Function verify/3
+
+Receives pairs of module maps and BEAM binaries. In parallel it verifies
+the modules and adds the ExCk chunk to the binaries. Returns the updated
+list of warnings from the verification.
+

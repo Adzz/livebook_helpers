@@ -1,0 +1,400 @@
+<!-- vim: syntax=markdown -->
+
+# URI
+
+Utilities for working with URIs.
+
+This module provides functions for working with URIs (for example, parsing
+URIs or encoding query strings). The functions in this module are implemented
+according to [RFC 3986](https://tools.ietf.org/html/rfc3986).
+
+URIs are structs behind the scenes. You can access the URI fields directly
+but you should not create a new `URI` directly via the struct syntax. Instead
+use the functions in this module.
+
+## Function char_reserved?/1
+
+Checks if `character` is a reserved one in a URI.
+
+As specified in [RFC 3986, section 2.2](https://tools.ietf.org/html/rfc3986#section-2.2),
+the following characters are reserved: `:`, `/`, `?`, `#`, `[`, `]`, `@`, `!`, `$`, `&`, `'`, `(`, `)`, `*`, `+`, `,`, `;`, `=`
+
+## Examples
+
+```elixir
+URI.char_reserved?(?+)
+```
+
+## Function char_unescaped?/1
+
+Checks if `character` is allowed unescaped in a URI.
+
+This is the default used by `URI.encode/2` where both
+[reserved](`char_reserved?/1`) and [unreserved characters](`char_unreserved?/1`)
+are kept unescaped.
+
+## Examples
+
+```elixir
+URI.char_unescaped?(?{)
+```
+
+## Function char_unreserved?/1
+
+Checks if `character` is an unreserved one in a URI.
+
+As specified in [RFC 3986, section 2.3](https://tools.ietf.org/html/rfc3986#section-2.3),
+the following characters are unreserved:
+
+  * Alphanumeric characters: `A-Z`, `a-z`, `0-9`
+  * `~`, `_`, `-`, `.`
+
+## Examples
+```elixir
+URI.char_unreserved?(?_)
+```
+
+## Function decode/1
+
+Percent-unescapes a URI.
+
+## Examples
+
+```elixir
+URI.decode("https%3A%2F%2Felixir-lang.org")
+```
+
+## Function decode_query/3
+
+Decodes `query` into a map.
+
+Given a query string in the form of `key1=value1&key2=value2...`, this
+function inserts each key-value pair in the query string as one entry in the
+given `map`. Keys and values in the resulting map will be binaries. Keys and
+values will be percent-unescaped.
+
+You can specify one of the following `encoding` options:
+
+  * `:www_form` - (default, since v1.12.0) keys and values are decoded as per
+    `decode_www_form/1`. This is the format typically used by browsers on
+    query strings and form data. It decodes "+" as " ".
+
+  * `:rfc3986` - (since v1.12.0) keys and values are decoded as per
+    `decode/1`. The result is the same as `:www_form` except for leaving "+"
+    as is in line with [RFC 3986](https://tools.ietf.org/html/rfc3986).
+
+Encoding defaults to `:www_form` for backward compatibility.
+Use `query_decoder/1` if you want to iterate over each value manually.
+
+## Examples
+
+```elixir
+URI.decode_query("foo=1&bar=2")
+```
+```elixir
+URI.decode_query("percent=oh+yes%21", %{"starting" => "map"})
+```
+```elixir
+URI.decode_query("percent=oh+yes%21", %{}, :rfc3986)
+```
+
+## Function decode_www_form/1
+
+Decodes `string` as "x-www-form-urlencoded".
+
+Note "x-www-form-urlencoded" is not specified as part of
+RFC 3986. However, it is a commonly used format to encode
+query strings and form data by browsers.
+
+## Examples
+
+```elixir
+URI.decode_www_form("%3Call+in%2F")
+```
+
+## Function default_port/1
+
+Returns the default port for a given `scheme`.
+
+If the scheme is unknown to the `URI` module, this function returns
+`nil`. The default port for any scheme can be configured globally
+via `default_port/2`.
+
+## Examples
+
+```elixir
+URI.default_port("ftp")
+```
+```elixir
+URI.default_port("ponzi")
+```
+
+## Function default_port/2
+
+Registers the default `port` for the given `scheme`.
+
+After this function is called, `port` will be returned by
+`default_port/1` for the given scheme `scheme`. Note that this function
+changes the default port for the given `scheme` *globally*, meaning for
+every application.
+
+It is recommended for this function to be invoked in your
+application's start callback in case you want to register
+new URIs.
+
+## Function encode/2
+
+Percent-escapes all characters that require escaping in `string`.
+
+This means reserved characters, such as `:` and `/`, and the
+so-called unreserved characters, which have the same meaning both
+escaped and unescaped, won't be escaped by default.
+
+See `encode_www_form/1` if you are interested in escaping reserved
+characters too.
+
+This function also accepts a `predicate` function as an optional
+argument. If passed, this function will be called with each byte
+in `string` as its argument and should return a truthy value (anything other
+than `false` or `nil`) if the given byte should be left as is, or return a
+falsy value (`false` or `nil`) if the character should be escaped. Defaults
+to `URI.char_unescaped?/1`.
+
+## Examples
+
+```elixir
+URI.encode("ftp://s-ite.tld/?value=put it+й")
+```
+```elixir
+URI.encode("a string", &(&1 != ?i))
+```
+
+## Function encode_query/2
+
+Encodes `enumerable` into a query string using `encoding`.
+
+Takes an enumerable that enumerates as a list of two-element
+tuples (for instance, a map or a keyword list) and returns a string
+in the form of `key1=value1&key2=value2...`.
+
+Keys and values can be any term that implements the `String.Chars`
+protocol with the exception of lists, which are explicitly forbidden.
+
+You can specify one of the following `encoding` strategies:
+
+  * `:www_form` - (default, since v1.12.0) keys and values are URL encoded as
+    per `encode_www_form/1`. This is the format typically used by browsers on
+    query strings and form data. It encodes " " as "+".
+
+  * `:rfc3986` - (since v1.12.0) the same as `:www_form` except it encodes
+    " " as "%20" according [RFC 3986](https://tools.ietf.org/html/rfc3986).
+    This is the best option if you are encoding in a non-browser situation,
+    since encoding spaces as "+" can be ambiguous to URI parsers. This can
+    inadvertently lead to spaces being interpreted as literal plus signs.
+
+Encoding defaults to `:www_form` for backward compatibility.
+## Examples
+
+```elixir
+query = %{"foo" => 1, "bar" => 2}
+URI.encode_query(query)
+```
+```elixir
+query = %{"key" => "value with spaces"}
+URI.encode_query(query)
+```
+```elixir
+query = %{"key" => "value with spaces"}
+URI.encode_query(query, :rfc3986)
+```
+```elixir
+URI.encode_query(%{key: [:a, :list]})
+```
+
+## Function encode_www_form/1
+
+Encodes `string` as "x-www-form-urlencoded".
+
+Note "x-www-form-urlencoded" is not specified as part of
+RFC 3986. However, it is a commonly used format to encode
+query strings and form data by browsers.
+
+## Example
+
+```elixir
+URI.encode_www_form("put: it+й")
+```
+
+## Function merge/2
+
+Merges two URIs.
+
+This function merges two URIs as per
+[RFC 3986, section 5.2](https://tools.ietf.org/html/rfc3986#section-5.2).
+
+## Examples
+
+```elixir
+URI.merge(URI.parse("http://google.com"), "/query") |> to_string()
+```
+```elixir
+URI.merge("http://example.com", "http://google.com") |> to_string()
+```
+
+## Function new/1
+
+Creates a new URI struct from a URI or a string.
+
+If a `%URI{}` struct is given, it returns `{:ok, uri}`. If a string is
+given, it will parse and validate it. If the string is valid, it returns
+`{:ok, uri}`, otherwise it returns `{:error, part}` with the invalid part
+of the URI. For parsing URIs without further validation, see `parse/1`.
+
+This function can parse both absolute and relative URLs. You can check
+if a URI is absolute or relative by checking if the `scheme` field is
+`nil` or not.
+
+When a URI is given without a port, the value returned by `URI.default_port/1`
+for the URI's scheme is used for the `:port` field. The scheme is also
+normalized to lowercase.
+
+## Examples
+
+```elixir
+URI.new("https://elixir-lang.org/")
+```
+```elixir
+URI.new("//elixir-lang.org/")
+```
+```elixir
+URI.new("/foo/bar")
+```
+```elixir
+URI.new("foo/bar")
+```
+```elixir
+URI.new("//[fe80::]/")
+```
+```elixir
+URI.new("https:?query")
+```
+```elixir
+URI.new("/invalid_greater_than_in_path/>")
+```
+Giving an existing URI simply returns it wrapped in a tuple:
+
+```elixir
+{:ok, uri} = URI.new("https://elixir-lang.org/")
+URI.new(uri)
+```
+## Function new!/1
+
+Similar to `new/0` but raises `URI.Error` if an invalid string is given.
+
+## Examples
+
+```elixir
+URI.new!("https://elixir-lang.org/")
+```
+```elixir
+URI.new!("/invalid_greater_than_in_path/>")
+```
+Giving an existing URI simply returns it:
+
+```elixir
+uri = URI.new!("https://elixir-lang.org/")
+URI.new!(uri)
+```
+## Function parse/1
+
+Parses a URI into its components, without further validation.
+
+This function can parse both absolute and relative URLs. You can check
+if a URI is absolute or relative by checking if the `scheme` field is
+nil or not. Furthermore, this function expects both absolute and
+relative URIs to be well-formed and does not perform any validation.
+See the "Examples" section below. Use `new/1` if you want more strict
+validation.
+
+When a URI is given without a port, the value returned by `URI.default_port/1`
+for the URI's scheme is used for the `:port` field. The scheme is also
+normalized to lowercase.
+
+If a `%URI{}` struct is given to this function, this function returns it
+unmodified.
+
+> Note: this function sets the field :authority for backwards
+> compatibility reasons but it is deprecated.
+
+## Examples
+
+```elixir
+URI.parse("https://elixir-lang.org/")
+```
+```elixir
+URI.parse("//elixir-lang.org/")
+```
+```elixir
+URI.parse("/foo/bar")
+```
+```elixir
+URI.parse("foo/bar")
+```
+In contrast to `URI.new/1`, this function will parse poorly-formed
+URIs, for example:
+
+```elixir
+URI.parse("/invalid_greater_than_in_path/>")
+```
+Another example is a URI with brackets in query strings. It is accepted
+by `parse/1` but it will be refused by `new/1`:
+
+```elixir
+URI.parse("/?foo[bar]=baz")
+```
+
+## Function query_decoder/2
+
+Returns a stream of two-element tuples representing key-value pairs in the
+given `query`.
+
+Key and value in each tuple will be binaries and will be percent-unescaped.
+
+You can specify one of the following `encoding` options:
+
+  * `:www_form` - (default, since v1.12.0) keys and values are decoded as per
+    `decode_www_form/1`. This is the format typically used by browsers on
+    query strings and form data. It decodes "+" as " ".
+
+  * `:rfc3986` - (since v1.12.0) keys and values are decoded as per
+    `decode/1`. The result is the same as `:www_form` except for leaving "+"
+    as is in line with [RFC 3986](https://tools.ietf.org/html/rfc3986).
+
+Encoding defaults to `:www_form` for backward compatibility.
+## Examples
+
+```elixir
+URI.query_decoder("foo=1&bar=2") |> Enum.to_list()
+```
+```elixir
+URI.query_decoder("food=bread%26butter&drinks=tap%20water+please") |> Enum.to_list()
+```
+```elixir
+URI.query_decoder("food=bread%26butter&drinks=tap%20water+please", :rfc3986) |> Enum.to_list()
+```
+
+## Function to_string/1
+
+Returns the string representation of the given [URI struct](`t:t/0`).
+
+## Examples
+
+```elixir
+uri = URI.parse("http://google.com")
+URI.to_string(uri)
+```
+```elixir
+uri = URI.parse("foo://bar.baz")
+URI.to_string(uri)
+```
+

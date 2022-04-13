@@ -1,0 +1,180 @@
+<!-- vim: syntax=markdown -->
+
+# Config
+
+A simple keyword-based configuration API.
+
+## Example
+
+This module is most commonly used to define application configuration,
+typically in `config/config.exs`:
+
+```elixir
+import Config
+
+config :some_app,
+  key1: "value1",
+  key2: "value2"
+
+import_config "#{config_env()}.exs"
+```
+`import Config` will import the functions `config/2`, `config/3`
+`config_env/0`, `config_target/0`, and `import_config/1`
+to help you manage your configuration.
+
+`config/2` and `config/3` are used to define key-value configuration
+for a given application. Once Mix starts, it will automatically
+evaluate the configuration file and persist the configuration above
+into `:some_app`'s application environment, which can be accessed in
+as follows:
+
+```elixir
+"value1" = Application.fetch_env!(:some_app, :key1)
+```
+Finally, the line `import_config "#{config_env()}.exs"` will import
+other config files based on the current configuration environment,
+such as `config/dev.exs` and `config/test.exs`.
+
+`Config` also provides a low-level API for evaluating and reading
+configuration, under the `Config.Reader` module.
+
+**Important:** if you are writing a library to be used by other developers,
+it is generally recommended to avoid the application environment, as the
+application environment is effectively a global storage. Also note that
+the `config/config.exs` of a library is not evaluated when the library is
+used as a dependency, as configuration is always meant to configure the
+current project. For more information, read our [library guidelines](library-guidelines.md).
+
+## Migrating from `use Mix.Config`
+
+The `Config` module in Elixir was introduced in v1.9 as a replacement to
+`Mix.Config`, which was specific to Mix and has been deprecated.
+
+You can leverage `Config` instead of `Mix.Config` in three steps. The first
+step is to replace `use Mix.Config` at the top of your config files by
+`import Config`.
+
+The second is to make sure your `import_config/1` calls do not have a
+wildcard character. If so, you need to perform the wildcard lookup
+manually. For example, if you did:
+
+```elixir
+import_config "../apps/*/config/config.exs"
+```
+It has to be replaced by:
+
+```elixir
+for config <- "../apps/*/config/config.exs" |> Path.expand(__DIR__) |> Path.wildcard() do
+  import_config config
+end
+```
+The last step is to replace all `Mix.env()` calls by `config_env()`.
+
+## config/runtime.exs
+
+For runtime configuration, you can use the `config/runtime.exs` file.
+It is executed right before applications start in both Mix and releases
+(assembled with `mix release`).
+
+## Function config/2
+
+Configures the given `root_key`.
+
+Keyword lists are always deep-merged.
+
+## Examples
+
+The given `opts` are merged into the existing configuration
+for the given `root_key`. Conflicting keys are overridden by the
+ones specified in `opts`, unless they are keywords, which are
+deep merged recursively. For example, the application configuration
+below
+
+```elixir
+config :logger,
+  level: :warn,
+  backends: [:console]
+
+config :logger,
+  level: :info,
+  truncate: 1024
+```
+will have a final configuration for `:logger` of:
+
+```elixir
+[level: :info, backends: [:console], truncate: 1024]
+```
+## Function config/3
+
+Configures the given `key` for the given `root_key`.
+
+Keyword lists are always deep merged.
+
+## Examples
+
+The given `opts` are merged into the existing values for `key`
+in the given `root_key`. Conflicting keys are overridden by the
+ones specified in `opts`, unless they are keywords, which are
+deep merged recursively. For example, the application configuration
+below
+
+```elixir
+config :ecto, Repo,
+  log_level: :warn,
+  adapter: Ecto.Adapters.Postgres
+
+config :ecto, Repo,
+  log_level: :info,
+  pool_size: 10
+```
+will have a final value of the configuration for the `Repo`
+key in the `:ecto` application of:
+
+```elixir
+[log_level: :info, pool_size: 10, adapter: Ecto.Adapters.Postgres]
+```
+## Macro config_env/0
+
+Returns the environment this configuration file is executed on.
+
+In Mix projects this function returns the environment this configuration
+file is executed on. In releases, the environment when `mix release` ran.
+
+This is most often used to execute conditional code:
+
+```elixir
+if config_env() == :prod do
+  config :my_app, :debug, false
+end
+```
+## Macro config_target/0
+
+Returns the target this configuration file is executed on.
+
+This is most often used to execute conditional code:
+
+```elixir
+if config_target() == :host do
+  config :my_app, :debug, false
+end
+```
+## Macro import_config/1
+
+Imports configuration from the given file.
+
+In case the file doesn't exist, an error is raised.
+
+If file is a relative, it will be expanded relatively to the
+directory the current configuration file is in.
+
+## Examples
+
+This is often used to emulate configuration across environments:
+
+```elixir
+import_config "#{config_env()}.exs"
+```
+Note, however, some configuration files, such as `config/runtime.exs`
+does not support imports, as they are meant to be copied across
+systems.
+

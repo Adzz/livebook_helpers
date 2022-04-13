@@ -1,0 +1,805 @@
+<!-- vim: syntax=markdown -->
+
+# Macro
+
+Macros are compile-time constructs that are invoked with Elixir's AST
+as input and a superset of Elixir's AST as output.
+
+Let's see a simple example that shows the difference between functions and macros:
+
+```elixir
+defmodule Example do
+  defmacro macro_inspect(value) do
+    IO.inspect(value)
+    value
+  end
+
+  def fun_inspect(value) do
+    IO.inspect(value)
+    value
+  end
+end
+```
+Now let's give it a try:
+
+```elixir
+import Example
+
+macro_inspect(1)
+# => 1
+# => 1
+
+fun_inspect(1)
+# => 1
+# => 1
+```
+So far they behave the same, as we are passing an integer as argument.
+But what happens when we pass an expression:
+
+```elixir
+macro_inspect(1 + 2)
+# => {:+, [line: 3], [1, 2]}
+# => 3
+
+fun_inspect(1 + 2)
+# => 3
+# => 3
+```
+The macro receives the representation of the code given as argument,
+while a function receives the result of the code given as argument.
+A macro must return a superset of the code representation. See
+`t:input/0` and `t:output/0` for more information.
+
+To learn more about Elixir's AST and how to build them programmatically,
+see `quote/2`.
+
+## Custom Sigils
+
+Macros are also commonly used to implement custom sigils. To create a custom
+sigil, define a macro with the name `sigil_{identifier}` that takes two
+arguments. The first argument will be the string, the second will be a charlist
+containing any modifiers. If the sigil is lower case (such as `sigil_x`) then
+the string argument will allow interpolation. If the sigil is upper case
+(such as `sigil_X`) then the string will not be interpolated.
+
+Valid modifiers include only lower and upper case letters. Other characters
+will cause a syntax error.
+
+The module containing the custom sigil must be imported before the sigil
+syntax can be used.
+
+### Examples
+
+```elixir
+defmodule MySigils do
+  defmacro sigil_x(term, [?r]) do
+    quote do
+      unquote(term) |> String.reverse()
+    end
+  end
+
+  defmacro sigil_x(term, _modifiers) do
+    term
+  end
+
+  defmacro sigil_X(term, [?r]) do
+    quote do
+      unquote(term) |> String.reverse()
+    end
+  end
+
+  defmacro sigil_X(term, _modifiers) do
+    term
+  end
+end
+
+import MySigils
+
+~x(with #{"inter" <> "polation"})
+# =>"with interpolation"
+
+~x(with #{"inter" <> "polation"})r
+# =>"noitalopretni htiw"
+
+~X(without #{"interpolation"})
+# =>"without \#{"interpolation"}"
+
+~X(without #{"interpolation"})r
+# =>"}\"noitalopretni\"{# tuohtiw"
+```
+## Function camelize/1
+
+Converts the given string to CamelCase format.
+
+This function was designed to camelize language identifiers/tokens,
+that's why it belongs to the `Macro` module. Do not use it as a general
+mechanism for camelizing strings as it does not support Unicode or
+characters that are not valid in Elixir identifiers.
+
+## Examples
+
+```elixir
+Macro.camelize("foo_bar")
+```
+If uppercase characters are present, they are not modified in any way
+as a mechanism to preserve acronyms:
+
+```elixir
+Macro.camelize("API.V1")
+```
+```elixir
+Macro.camelize("API_SPEC")
+```
+
+## Function decompose_call/1
+
+Decomposes a local or remote call into its remote part (when provided),
+function name and argument list.
+
+Returns `:error` when an invalid call syntax is provided.
+
+## Examples
+
+```elixir
+Macro.decompose_call(quote(do: foo))
+```
+```elixir
+Macro.decompose_call(quote(do: foo()))
+```
+```elixir
+Macro.decompose_call(quote(do: foo(1, 2, 3)))
+```
+```elixir
+Macro.decompose_call(quote(do: Elixir.M.foo(1, 2, 3)))
+```
+```elixir
+Macro.decompose_call(quote(do: 42))
+```
+```elixir
+Macro.decompose_call(quote(do: {:foo, [], []}))
+```
+
+## Function escape/2
+
+Recursively escapes a value so it can be inserted into a syntax tree.
+
+## Examples
+
+```elixir
+Macro.escape(:foo)
+```
+```elixir
+Macro.escape({:a, :b, :c})
+```
+```elixir
+Macro.escape({:unquote, [], [1]}, unquote: true)
+```
+## Options
+
+  * `:unquote` - when true, this function leaves `unquote/1` and
+    `unquote_splicing/1` statements unescaped, effectively unquoting
+    the contents on escape. This option is useful only when escaping
+    ASTs which may have quoted fragments in them. Defaults to false.
+
+  * `:prune_metadata` - when true, removes metadata from escaped AST
+    nodes. Note this option changes the semantics of escaped code and
+    it should only be used when escaping ASTs. Defaults to false.
+
+    As an example, `ExUnit` stores the AST of every assertion, so when
+    an assertion fails we can show code snippets to users. Without this
+    option, each time the test module is compiled, we get a different
+    MD5 of the module bytecode, because the AST contains metadata,
+    such as counters, specific to the compilation environment. By pruning
+    the metadata, we ensure that the module is deterministic and reduce
+    the amount of data `ExUnit` needs to keep around. Only the minimal
+    amount of metadata is kept, such as `:line` and `:no_parens`.
+
+## Comparison to `Kernel.SpecialForms.quote/2`
+The `escape/2` function is sometimes confused with `Kernel.SpecialForms.quote/2`,
+because the above examples behave the same with both. The key difference is
+best illustrated when the value to escape is stored in a variable.
+
+```elixir
+Macro.escape({:a, :b, :c})
+```
+```elixir
+quote do: {:a, :b, :c}
+```
+```elixir
+value = {:a, :b, :c}
+Macro.escape(value)
+```
+```elixir
+quote do: value
+```
+```elixir
+value = {:a, :b, :c}
+quote do: unquote(value)
+```
+`escape/2` is used to escape *values* (either directly passed or variable
+bound), while `Kernel.SpecialForms.quote/2` produces syntax trees for
+expressions.
+
+## Function expand/2
+
+Receives an AST node and expands it until it can no longer
+be expanded.
+
+Note this function does not traverse the AST, only the root
+node is expanded.
+
+This function uses `expand_once/2` under the hood. Check
+it out for more information and examples.
+
+## Function expand_once/2
+
+Receives an AST node and expands it once.
+
+The following contents are expanded:
+
+  * Macros (local or remote)
+  * Aliases are expanded (if possible) and return atoms
+  * Compilation environment macros (`__CALLER__/0`, `__DIR__/0`, `__ENV__/0` and `__MODULE__/0`)
+  * Module attributes reader (`@foo`)
+
+If the expression cannot be expanded, it returns the expressionitself. This function does not traverse the AST, only the root
+node is expanded.
+
+`expand_once/2` performs the expansion just once. Check `expand/2`
+to perform expansion until the node can no longer be expanded.
+
+## Examples
+
+In the example below, we have a macro that generates a module
+with a function named `name_length` that returns the length
+of the module name. The value of this function will be calculated
+at compilation time and not at runtime.
+
+Consider the implementation below:
+
+```elixir
+defmacro defmodule_with_length(name, do: block) do
+  length = length(Atom.to_charlist(name))
+
+  quote do
+    defmodule unquote(name) do
+      def name_length, do: unquote(length)
+      unquote(block)
+    end
+  end
+end
+```
+When invoked like this:
+
+```elixir
+defmodule_with_length My.Module do
+  def other_function, do: ...
+end
+```
+The compilation will fail because `My.Module` when quoted
+is not an atom, but a syntax tree as follows:
+
+```elixir
+{:__aliases__, [], [:My, :Module]}
+```
+That said, we need to expand the aliases node above to an
+atom, so we can retrieve its length. Expanding the node is
+not straightforward because we also need to expand the
+caller aliases. For example:
+
+```elixir
+alias MyHelpers, as: My
+
+defmodule_with_length My.Module do
+  def other_function, do: ...
+end
+```
+The final module name will be `MyHelpers.Module` and not
+`My.Module`. With `Macro.expand/2`, such aliases are taken
+into consideration. Local and remote macros are also
+expanded. We could rewrite our macro above to use this
+function as:
+
+```elixir
+defmacro defmodule_with_length(name, do: block) do
+  expanded = Macro.expand(name, __CALLER__)
+  length = length(Atom.to_charlist(expanded))
+
+  quote do
+    defmodule unquote(name) do
+      def name_length, do: unquote(length)
+      unquote(block)
+    end
+  end
+end
+```
+## Function generate_arguments/2
+
+Generates AST nodes for a given number of required argument
+variables using `Macro.var/2`.
+
+Note the arguments are not unique. If you later on want
+to access the same variables, you can invoke this function
+with the same inputs. Use `generate_unique_arguments/2` to
+generate a unique arguments that can't be overridden.
+
+## Examples
+
+```elixir
+Macro.generate_arguments(2, __MODULE__)
+```
+
+## Function generate_unique_arguments/2
+
+Generates AST nodes for a given number of required argument
+variables using `Macro.unique_var/2`.
+
+## Examples
+
+```elixir
+[var1, var2] = Macro.generate_unique_arguments(2, __MODULE__)
+{:arg1, [counter: c1], __MODULE__} = var1
+{:arg2, [counter: c2], __MODULE__} = var2
+is_integer(c1) and is_integer(c2)
+```
+
+## Function operator?/2
+
+Returns `true` if the given name and arity is an operator.
+
+## Examples
+
+```elixir
+Macro.operator?(:not_an_operator, 3)
+```
+```elixir
+Macro.operator?(:+, 1)
+```
+```elixir
+Macro.operator?(:++, 2)
+```
+```elixir
+Macro.operator?(:"..//", 3)
+```
+
+## Function pipe/3
+
+Pipes `expr` into the `call_args` at the given `position`.
+
+## Function postwalk/2
+
+Performs a depth-first, post-order traversal of quoted expressions.
+
+## Function postwalk/3
+
+Performs a depth-first, post-order traversal of quoted expressions
+using an accumulator.
+
+## Function postwalker/1
+
+Returns an enumerable that traverses the  `ast` in depth-first,
+post-order traversal.
+
+## Examples
+
+```elixir
+ast = quote do: foo(1, "abc")
+Enum.map(Macro.postwalker(ast), & &1)
+```
+
+## Function prewalk/2
+
+Performs a depth-first, pre-order traversal of quoted expressions.
+
+Returns a new ast where each node is the result of invoking `fun` on each
+corresponding node of `ast`.
+
+## Examples
+
+```elixir
+ast = quote do: 5 + 3 * 7
+
+new_ast =
+  Macro.prewalk(ast, fn
+    {:+, meta, children} -> {:*, meta, children}
+    {:*, meta, children} -> {:+, meta, children}
+    other -> other
+  end)
+
+Code.eval_quoted(ast)
+```
+```elixir
+Code.eval_quoted(new_ast)
+```
+
+## Function prewalk/3
+
+Performs a depth-first, pre-order traversal of quoted expressions
+using an accumulator.
+
+## Function prewalker/1
+
+Returns an enumerable that traverses the  `ast` in depth-first,
+pre-order traversal.
+
+## Examples
+
+```elixir
+ast = quote do: foo(1, "abc")
+Enum.map(Macro.prewalker(ast), & &1)
+```
+
+## Function quoted_literal?/1
+
+Returns `true` if the given quoted expression represents a quoted literal.
+
+Atoms and numbers are always literals. Binaries, lists, tuples,
+maps, and structs are only literals if all of their terms are also literals.
+
+## Examples
+
+```elixir
+Macro.quoted_literal?(quote(do: "foo"))
+```
+```elixir
+Macro.quoted_literal?(quote(do: {"foo", 1}))
+```
+```elixir
+Macro.quoted_literal?(quote(do: {"foo", 1, :baz}))
+```
+```elixir
+Macro.quoted_literal?(quote(do: %{foo: "bar"}))
+```
+```elixir
+Macro.quoted_literal?(quote(do: %URI{path: "/"}))
+```
+```elixir
+Macro.quoted_literal?(quote(do: URI.parse("/")))
+```
+```elixir
+Macro.quoted_literal?(quote(do: {foo, var}))
+```
+
+## Function special_form?/2
+
+Returns `true` if the given name and arity is a special form.
+
+## Function struct!/2
+
+Expands the struct given by `module` in the given `env`.
+
+This is useful when a struct needs to be expanded at
+compilation time and the struct being expanded may or may
+not have been compiled. This function is also capable of
+expanding structs defined under the module being compiled.
+
+It will raise `CompileError` if the struct is not available.
+From Elixir v1.12, calling this function also adds an export
+dependency on the given struct.
+
+## Function to_string/1
+
+Converts the given expression AST to a string.
+
+This function discards all formatting of the original code.
+See `Code.quoted_to_algebra/2` as a lower level function
+with more control around formatting.
+
+## Examples
+
+```elixir
+Macro.to_string(quote(do: foo.bar(1, 2, 3)))
+```
+
+## Function to_string/2
+
+Converts the given expression AST to a string.
+
+The given `fun` is called for every node in the AST with two arguments: the
+AST of the node being printed and the string representation of that same
+node. The return value of this function is used as the final string
+representation for that AST node.
+
+This function discards all formatting of the original code.
+
+## Examples
+
+```elixir
+Macro.to_string(quote(do: 1 + 2), fn
+  1, _string -> "one"
+  2, _string -> "two"
+  _ast, string -> string
+end)
+
+# => "one + two"
+```
+## Function traverse/4
+
+Performs a depth-first traversal of quoted expressions
+using an accumulator.
+
+## Function underscore/1
+
+Converts the given atom or binary to underscore format.
+
+If an atom is given, it is assumed to be an Elixir module,
+so it is converted to a binary and then processed.
+
+This function was designed to underscore language identifiers/tokens,
+that's why it belongs to the `Macro` module. Do not use it as a general
+mechanism for underscoring strings as it does not support Unicode or
+characters that are not valid in Elixir identifiers.
+
+## Examples
+
+```elixir
+Macro.underscore("FooBar")
+```
+```elixir
+Macro.underscore("Foo.Bar")
+```
+```elixir
+Macro.underscore(Foo.Bar)
+```
+In general, `underscore` can be thought of as the reverse of
+`camelize`, however, in some cases formatting may be lost:
+
+```elixir
+Macro.underscore("SAPExample")
+```
+```elixir
+Macro.camelize("sap_example")
+```
+```elixir
+Macro.camelize("hello_10")
+```
+
+## Function unescape_string/1
+
+Unescapes the given chars.
+
+This is the unescaping behaviour used by default in Elixir
+single- and double-quoted strings. Check `unescape_string/2`
+for information on how to customize the escaping map.
+
+In this setup, Elixir will escape the following: `\0`, `\a`, `\b`,
+`\d`, `\e`, `\f`, `\n`, `\r`, `\s`, `\t` and `\v`. Bytes can be
+given as hexadecimals via `\xNN` and Unicode code points as
+`\uNNNN` escapes.
+
+This function is commonly used on sigil implementations
+(like `~r`, `~s` and others) which receive a raw, unescaped
+string.
+
+## Examples
+
+```elixir
+Macro.unescape_string("example\\n")
+```
+In the example above, we pass a string with `\n` escaped
+and return a version with it unescaped.
+
+## Function unescape_string/2
+
+Unescapes the given chars according to the map given.
+
+Check `unescape_string/1` if you want to use the same map
+as Elixir single- and double-quoted strings.
+
+## Map
+
+The map must be a function. The function receives an integer
+representing the code point of the character it wants to unescape.
+Here is the default mapping function implemented by Elixir:
+
+```elixir
+def unescape_map(:newline), do: true
+def unescape_map(:unicode), do: true
+def unescape_map(:hex), do: true
+def unescape_map(?0), do: ?0
+def unescape_map(?a), do: ?\a
+def unescape_map(?b), do: ?\b
+def unescape_map(?d), do: ?\d
+def unescape_map(?e), do: ?\e
+def unescape_map(?f), do: ?\f
+def unescape_map(?n), do: ?\n
+def unescape_map(?r), do: ?\r
+def unescape_map(?s), do: ?\s
+def unescape_map(?t), do: ?\t
+def unescape_map(?v), do: ?\v
+def unescape_map(e), do: e
+```
+If the `unescape_map/1` function returns `false`, the char is
+not escaped and the backslash is kept in the string.
+
+Newlines, Unicode, and hexadecimals code points will be escaped if
+the map returns `true` respectively for `:newline`, `:unicode`, and
+`:hex`.
+
+## Examples
+
+Using the `unescape_map/1` function defined above is easy:
+
+```elixir
+Macro.unescape_string("example\\n", &unescape_map(&1))
+```
+## Function unique_var/2
+
+Generates an AST node representing a unique variable
+given by the atoms `var` and `context`.
+
+## Examples
+
+```elixir
+{:foo, [counter: c], __MODULE__} = Macro.unique_var(:foo, __MODULE__)
+is_integer(c)
+```
+
+## Function unpipe/1
+
+Breaks a pipeline expression into a list.
+
+The AST for a pipeline (a sequence of applications of `|>`) is similar to the
+AST of a sequence of binary operators or function applications: the top-level
+expression is the right-most `:|>` (which is the last one to be executed), and
+its left-hand and right-hand sides are its arguments:
+
+```elixir
+quote do: 100 |> div(5) |> div(2)
+# => {:|>, _, [arg1, arg2]}
+```
+In the example above, the `|>` pipe is the right-most pipe; `arg1` is the AST
+for `100 |> div(5)`, and `arg2` is the AST for `div(2)`.
+
+It's often useful to have the AST for such a pipeline as a list of function
+applications. This function does exactly that:
+
+```elixir
+Macro.unpipe(quote do: 100 |> div(5) |> div(2))
+# => [{100, 0}, {{:div, [], [5]}, 0}, {{:div, [], [2]}, 0}]
+```
+We get a list that follows the pipeline directly: first the `100`, then the
+`div(5)` (more precisely, its AST), then `div(2)`. The `0` as the second
+element of the tuples is the position of the previous element in the pipeline
+inside the current function application: `{{:div, [], [5]}, 0}` means that the
+previous element (`100`) will be inserted as the 0th (first) argument to the
+`div/2` function, so that the AST for that function will become `{:div, [],
+[100, 5]}` (`div(100, 5)`).
+
+## Function update_meta/2
+
+Applies the given function to the node metadata if it contains one.
+
+This is often useful when used with `Macro.prewalk/2` to remove
+information like lines and hygienic counters from the expression
+for either storage or comparison.
+
+## Examples
+
+```elixir
+quoted = quote line: 10, do: sample()
+```
+```elixir
+Macro.update_meta(quoted, &Keyword.delete(&1, :line))
+```
+
+## Function validate/1
+
+Validates the given expressions are valid quoted expressions.
+
+Checks the `t:Macro.t/0` for the specification of a valid
+quoted expression.
+
+It returns `:ok` if the expression is valid. Otherwise it returns a tuple in the form of
+`{:error, remainder}` where `remainder` is the invalid part of the quoted expression.
+
+## Examples
+
+```elixir
+Macro.validate({:two_element, :tuple})
+```
+```elixir
+Macro.validate({:three, :element, :tuple})
+```
+```elixir
+Macro.validate([1, 2, 3])
+```
+```elixir
+Macro.validate([1, 2, 3, {4}])
+```
+
+## Function var/2
+
+Generates an AST node representing the variable given
+by the atoms `var` and `context`.
+
+Note this variable is not unique. If you later on want
+to access this same variable, you can invoke `var/2`
+again with the same arguments. Use `unique_var/2` to
+generate a unique variable that can't be overridden.
+
+## Examples
+
+In order to build a variable, a context is expected.
+Most of the times, in order to preserve hygiene, the
+context must be `__MODULE__/0`:
+
+```elixir
+Macro.var(:foo, __MODULE__)
+```
+However, if there is a need to access the user variable,
+nil can be given:
+
+```elixir
+Macro.var(:foo, nil)
+```
+
+## Type t
+
+Abstract Syntax Tree (AST)
+## Type input
+
+The inputs of a macro
+## Type output
+
+The output of a macro
+## Type metadata
+
+A keyword list of AST metadata.
+
+The metadata in Elixir AST is a keyword list of values. Any key can be used
+and different parts of the compiler may use different keys. For example,
+the AST received by a macro will always include the `:line` annotation,
+while the AST emitted by `quote/2` will only have the `:line` annotation if
+the `:line` option is provided.
+
+The following metadata keys are public:
+
+  * `:context` - Defines the context in which the AST was generated.
+    For example, `quote/2` will include the module calling `quote/2`
+    as the context. This is often used to distinguish regular code from code
+    generated by a macro or by `quote/2`.
+  * `:counter` - The variable counter used for variable hygiene. In terms of
+    the compiler, each variable is identified by the combination of either
+    `name` and `metadata[:counter]`, or `name` and `context`.
+  * `:generated` - Whether the code should be considered as generated by
+    the compiler or not. This means the compiler and tools like Dialyzer may not
+    emit certain warnings.
+  * `:keep` - Used by `quote/2` with the option `location: :keep` to annotate
+    the file and the line number of the quoted source.
+  * `:line` - The line number of the AST node.
+
+The following metadata keys are enabled by `Code.string_to_quoted/2`:
+  * `:closing` - contains metadata about the closing pair, such as a `}`
+    in a tuple or in a map, or such as the closing `)` in a function call
+    with parens. The `:closing` does not delimit the end of expression if
+    there are `:do` and `:end` metadata  (when `:token_metadata` is true)
+  * `:column` - the column number of the AST node (when `:columns` is true)
+  * `:delimiter` - contains the opening delimiter for sigils, strings,
+    and charlists as a string (such as `"{"`, `"/"`, `"'"`, and the like)
+  * `:format` - set to `:keyword` when an atom is defined as a keyword
+  * `:do` - contains metadata about the `do` location in a function call with
+    `do`-`end` blocks (when `:token_metadata` is true)
+  * `:end` - contains metadata about the `end` location in a function call with
+    `do`-`end` blocks (when `:token_metadata` is true)
+  * `:end_of_expression` - denotes when the end of expression effectively
+    happens. Available for all expressions except the last one inside a
+    `__block__` (when `:token_metadata` is true)
+  * `:indentation` - indentation of a sigil heredoc
+
+The following metadata keys are private:
+  * `:alias` - Used for alias hygiene.
+  * `:ambiguous_op` - Used for improved error messages in the compiler.
+  * `:import` - Used for import hygiene.
+  * `:var` - Used for improved error messages on undefined variables.
+
+Do not rely on them as they may change or be fully removed in future versionsof the language. They are often used by `quote/2` and the compiler to provide
+features like hygiene, better error messages, and so forth.
+
+If you introduce custom keys into the AST metadata, please make sure to prefix
+them with the name of your library or application, so that they will not conflict
+with keys that could potentially be introduced by the compiler in the future.
+
+## Type captured_remote_function
+
+A captured remote function in the format of &Mod.fun/arity

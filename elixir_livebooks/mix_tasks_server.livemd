@@ -1,0 +1,10 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.TasksServer
+
+## Function child_spec/1
+
+Returns a specification to start this module under a supervisor.
+
+See `Supervisor`.
+

@@ -1,0 +1,10 @@
+<!-- vim: syntax=markdown -->
+
+# ImplementedProto
+
+Just a normal mod doc I assume
+
+## Function thing/1
+
+Anything special here?
+

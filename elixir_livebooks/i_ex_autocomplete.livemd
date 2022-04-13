@@ -1,0 +1,16 @@
+<!-- vim: syntax=markdown -->
+
+# IEx.Autocomplete
+
+## Function expand/2
+
+The expansion logic.
+
+Some of the expansion has to be use the current shell
+environment, which is found via the broker.
+
+## Function remsh/1
+
+Provides one helper function that is injected into connecting
+remote nodes to properly handle autocompletion.
+

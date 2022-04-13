@@ -1,0 +1,26 @@
+<!-- vim: syntax=markdown -->
+
+# Logger.BackendSupervisor
+
+## Function child_spec/1
+
+Returns a specification to start this module under a supervisor.
+
+See `Supervisor`.
+
+## Function start_link/1
+
+Starts the backend supervisor.
+
+## Function translate_backend/1
+
+Translates the shortcut backend name into its handler.
+
+## Function unwatch/1
+
+Removes the given `backend`.
+
+## Function watch/1
+
+Watches the given `backend`.
+

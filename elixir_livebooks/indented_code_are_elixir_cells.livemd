@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# IndentedCodeAreElixirCells
+
+
+```elixir
+"This is elixir" <> "And should be a cell"
+```

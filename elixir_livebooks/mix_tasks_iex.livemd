@@ -1,0 +1,6 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Tasks.Iex
+
+A task that simply instructs users to run `iex -S mix`.
+

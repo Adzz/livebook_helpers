@@ -1,0 +1,55 @@
+<!-- vim: syntax=markdown -->
+
+# Mix.Shell.IO
+
+This is Mix's default shell.
+
+It simply prints messages to stdio and stderr.
+
+## Function cmd/2
+
+Executes the given command and prints its output
+to stdout as it comes.
+
+## Function error/1
+
+Prints the given ANSI error to the shell followed by a newline.
+
+## Function info/1
+
+Prints the given ANSI message to the shell followed by a newline.
+
+## Function print_app/0
+
+Prints the current application to the shell if it
+was not printed yet.
+
+## Function prompt/1
+
+Prints a message and prompts the user for input.
+
+Input will be consumed until Enter is pressed.
+
+## Function yes?/2
+
+Prints a message and asks the user to confirm if they
+want to proceed. The user must type and submit one of
+"y", "yes", "Y", "YES" or "Yes".
+
+The user may also press Enter; this can be configured
+to either accept or reject the prompt. The latter case
+may be useful for a potentially dangerous operation that
+should require explicit confirmation from the user.
+
+## Options
+
+  * `:default` - (:yes or :no) if `:yes` pressing Enter
+    accepts the prompt; if `:no` pressing Enter rejects
+    the prompt instead. Defaults to `:yes`.
+
+## Examples
+```elixir
+if Mix.shell().yes?("Are you sure?") do
+  # do something...
+end
+```

@@ -1,0 +1,8 @@
+<!-- vim: syntax=markdown -->
+
+# Kernel.LexicalTracker
+
+## Function references/1
+
+Returns all references in this lexical scope.
+

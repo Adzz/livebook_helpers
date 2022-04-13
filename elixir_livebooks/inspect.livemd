@@ -1,0 +1,93 @@
+<!-- vim: syntax=markdown -->
+
+# Inspect
+
+The `Inspect` protocol converts an Elixir data structure into an
+algebra document.
+
+This documentation refers to implementing the `Inspect` protocol
+for your own data structures. To learn more about using inspect,
+see `Kernel.inspect/2` and `IO.inspect/2`.
+
+The `inspect/2` function receives the entity to be inspected
+followed by the inspecting options, represented by the struct
+`Inspect.Opts`. Building of the algebra document is done with
+`Inspect.Algebra`.
+
+## Examples
+
+Many times, inspecting a structure can be implemented in function
+of existing entities. For example, here is `MapSet`'s `inspect/2`
+implementation:
+
+```elixir
+defimpl Inspect, for: MapSet do
+  import Inspect.Algebra
+
+  def inspect(map_set, opts) do
+    concat(["#MapSet<", to_doc(MapSet.to_list(map_set), opts), ">"])
+  end
+end
+```
+The [`concat/1`](`Inspect.Algebra.concat/1`) function comes from
+`Inspect.Algebra` and it concatenates algebra documents together.
+In the example above it is concatenating the string `"#MapSet<"`,
+the document returned by `Inspect.Algebra.to_doc/2`, and the final
+string `">"`. We prefix the module name `#` to denote the inspect
+presentation is not actually valid Elixir syntax.
+
+Finally, note strings themselves are valid algebra documents that
+keep their formatting when pretty printed. This means your `Inspect`
+implementation may simply return a string, although that will devoid
+it of any pretty-printing.
+
+## Error handling
+
+In case there is an error while your structure is being inspected,
+Elixir will raise an `ArgumentError` error and will automatically fall back
+to a raw representation for printing the structure.
+
+You can however access the underlying error by invoking the `Inspect`
+implementation directly. For example, to test `Inspect.MapSet` above,
+you can invoke it as:
+
+```elixir
+Inspect.MapSet.inspect(MapSet.new(), %Inspect.Opts{})
+```
+## Deriving
+
+The `Inspect` protocol can be derived to hide certain fields from
+structs, so they don't show up in logs, inspects and similar. This
+is especially useful for fields containing private information.
+
+The options `:only` and `:except` can be used with `@derive` to
+specify which fields should and should not appear in the
+algebra document:
+
+```elixir
+defmodule User do
+  @derive {Inspect, only: [:id, :name]}
+  defstruct [:id, :name, :address]
+end
+
+inspect(%User{id: 1, name: "Homer", address: "742 Evergreen Terrace"})
+# => #User<id: 1, name: "Homer", ...>
+```
+## Function inspect/2
+
+Converts `term` into an algebra document.
+
+This function shouldn't be invoked directly, unless when implementing
+a custom `inspect_fun` to be given to `Inspect.Opts`. Everywhere else,
+`Inspect.Algebra.to_doc/2` should be preferred as it handles structs
+and exceptions.
+
+## inspect/2
+
+Converts `term` into an algebra document.
+
+This function shouldn't be invoked directly, unless when implementing
+a custom `inspect_fun` to be given to `Inspect.Opts`. Everywhere else,
+`Inspect.Algebra.to_doc/2` should be preferred as it handles structs
+and exceptions.
+
