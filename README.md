@@ -2,6 +2,8 @@
 
 Some useful helpers that you can use to interact with livebook.
 
+See [this blog post](https://blog.appsignal.com/2022/05/24/livebook-for-elixir-just-what-the-docs-ordered.html) for more
+
 ## Generating Livebooks From Module Functions.
 
 The easiest way to use this is to include `LivebookHelpers` as a dev dependency:
